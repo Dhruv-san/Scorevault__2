@@ -1,0 +1,6 @@
+{
+  "name": "Scorevault",
+  "description": "India's discovery, rating, review, and comparison platform for schools and colleges.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
