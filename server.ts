@@ -3,28 +3,29 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { GoogleGenAI, ThinkingLevel } from '@google/genai';
 import { createServer as createViteServer } from 'vite';
-import dotenv from 'dotenv';
-
-dotenv.config();
+import { config } from './src/server/config';
+import apiRoutes from './src/server/routes/apiRoutes';
+import { errorHandler } from './src/server/middleware/apiHelpers';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = 3000;
 
 app.use(express.json());
+
+// Mount modular API routes
+app.use('/api', apiRoutes);
 
 // Lazy initialized Gemini client
 let aiClient: GoogleGenAI | null = null;
 function getAiClient(): GoogleGenAI {
   if (!aiClient) {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
+    if (!config.geminiApiKey) {
       throw new Error('GEMINI_API_KEY environment variable is missing');
     }
     aiClient = new GoogleGenAI({
-      apiKey,
+      apiKey: config.geminiApiKey,
       httpOptions: {
         headers: {
           'User-Agent': 'aistudio-build'
@@ -43,7 +44,7 @@ app.get('/api/health', (req: Request, res: Response) => {
 // AI Education Advisor & Fact-Checking Endpoint
 app.post('/api/gemini/advisor', async (req: Request, res: Response) => {
   try {
-    const { prompt, useThinking, institutionContext, searchGrounded } = req.body;
+    const { prompt, useThinking, institutionContext } = req.body;
 
     if (!prompt) {
       return res.status(400).json({ error: 'Prompt is required' });
@@ -51,7 +52,6 @@ app.post('/api/gemini/advisor', async (req: Request, res: Response) => {
 
     const ai = getAiClient();
 
-    // High Thinking mode uses gemini-3.1-pro-preview with ThinkingLevel.HIGH
     if (useThinking) {
       try {
         const systemInstruction = `You are the Scorevault Senior Admissions & Education Counselor. 
@@ -77,11 +77,9 @@ Never use marketing jargon. Structure with clear insights and bullet points.`;
         });
       } catch (err: any) {
         console.warn('Thinking model failed or requires paid key, falling back to gemini-3.5-flash with search:', err?.message);
-        // Fallback to flash with search
       }
     }
 
-    // Default: Search Grounded with gemini-3.5-flash
     const systemInstruction = `You are Scorevault’s real-time Indian Education Intelligence engine.
 You provide verified, current information regarding Indian schools, colleges, NIRF rankings, CBSE/ICSE boards, fees, placements, and campus updates.
 Use Google Search data to verify recent details if applicable.
@@ -120,9 +118,12 @@ Context about the institutions being discussed: ${institutionContext ? JSON.stri
   }
 });
 
+// Centralized error handler
+app.use(errorHandler);
+
 // Setup Vite or static serving
 async function start() {
-  if (process.env.NODE_ENV !== 'production') {
+  if (config.nodeEnv !== 'production') {
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: 'spa',
@@ -136,8 +137,8 @@ async function start() {
     });
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Scorevault server running on http://0.0.0.0:${PORT}`);
+  app.listen(config.port, '0.0.0.0', () => {
+    console.log(`Scorevault server running on http://0.0.0.0:${config.port}`);
   });
 }
 

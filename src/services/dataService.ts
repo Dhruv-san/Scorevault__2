@@ -108,10 +108,38 @@ class DataService {
     }
   }
 
-  // Institutions Query API
+  // Async API with automatic fallback to local memory for instant client responsiveness
+  public async fetchInstitutions(params?: SearchFilterParams): Promise<Institution[]> {
+    try {
+      const queryParams = new URLSearchParams();
+      if (params?.query) queryParams.append('query', params.query);
+      if (params?.city) queryParams.append('city', params.city);
+      if (params?.type) queryParams.append('type', params.type);
+      if (params?.category) queryParams.append('category', params.category);
+      if (params?.board) queryParams.append('board', params.board);
+      if (params?.ownership) queryParams.append('ownership', params.ownership);
+      if (params?.minRating) queryParams.append('minRating', params.minRating.toString());
+      if (params?.maxFee) queryParams.append('maxFee', params.maxFee.toString());
+      if (params?.hostel) queryParams.append('hostel', 'true');
+      if (params?.verifiedOnly) queryParams.append('verifiedOnly', 'true');
+      if (params?.sortBy) queryParams.append('sortBy', params.sortBy);
+
+      const res = await fetch(`/api/institutions?${queryParams.toString()}`);
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data)) {
+          return json.data;
+        }
+      }
+    } catch (e) {
+      console.warn('Backend API request failed, falling back to local dataset', e);
+    }
+    return this.getInstitutions(params);
+  }
+
+  // Synchronous local query fallback for seamless component rendering
   public getInstitutions(params?: SearchFilterParams): Institution[] {
     let result = [...this.institutions];
-
     if (!params) return result;
 
     if (params.query && params.query.trim()) {
@@ -129,9 +157,7 @@ class DataService {
     }
 
     if (params.city && params.city !== 'All') {
-      result = result.filter(item => 
-        item.city.toLowerCase().includes(params.city!.toLowerCase())
-      );
+      result = result.filter(item => item.city.toLowerCase().includes(params.city!.toLowerCase()));
     }
 
     if (params.type && params.type !== 'All') {
@@ -169,7 +195,6 @@ class DataService {
       result = result.filter(item => item.feeRange.min <= params.maxFee!);
     }
 
-    // Sorting
     switch (params.sortBy) {
       case 'highest_rated':
         result.sort((a, b) => b.rating - a.rating);
@@ -213,9 +238,7 @@ class DataService {
   }
 
   public getInstitutionsByCity(cityName: string): Institution[] {
-    return this.institutions.filter(item => 
-      item.city.toLowerCase().includes(cityName.toLowerCase())
-    );
+    return this.institutions.filter(item => item.city.toLowerCase().includes(cityName.toLowerCase()));
   }
 
   public getInstitutionsByCategory(category: string): Institution[] {
@@ -226,7 +249,6 @@ class DataService {
     );
   }
 
-  // Cities API
   public getCities(): CityInfo[] {
     return CITIES_DATA;
   }
@@ -235,7 +257,6 @@ class DataService {
     return CITIES_DATA.find(c => c.id.toLowerCase() === cityId.toLowerCase() || c.name.toLowerCase() === cityId.toLowerCase());
   }
 
-  // Reviews API
   public getReviews(institutionId: string, options?: { sort?: string; reviewerType?: string }): Review[] {
     let list = this.reviews.filter(r => r.institutionId === institutionId && r.status !== 'rejected');
 
@@ -275,7 +296,6 @@ class DataService {
     this.reviews.unshift(newReview);
     this.persistReviews();
 
-    // Recompute institution overall score and counts
     const inst = this.institutions.find(i => i.id === newReview.institutionId);
     if (inst) {
       const instReviews = this.reviews.filter(r => r.institutionId === inst.id && r.status === 'approved');
@@ -289,6 +309,13 @@ class DataService {
 
       this.persistInstitutions();
     }
+
+    // Background push to backend API
+    fetch('/api/reviews', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(reviewInput)
+    }).catch(err => console.warn('Async review API push failed', err));
 
     return newReview;
   }
@@ -306,6 +333,10 @@ class DataService {
     }
 
     this.persistReviews();
+
+    fetch(`/api/reviews/${reviewId}/vote`, { method: 'POST' })
+      .catch(err => console.warn('Async vote API push failed', err));
+
     return !!review.userVotedHelpful;
   }
 
@@ -335,6 +366,12 @@ class DataService {
       this.persistReviews();
     }
 
+    fetch('/api/reports', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(reportData)
+    }).catch(err => console.warn('Async report API push failed', err));
+
     return report;
   }
 
@@ -354,10 +391,16 @@ class DataService {
       review.reported = false;
     }
     this.persistReviews();
+
+    fetch(`/api/admin/reviews/${reviewId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action })
+    }).catch(err => console.warn('Async moderate review API push failed', err));
+
     return true;
   }
 
-  // Saved Institutions (Bookmarks)
   public isSaved(institutionId: string): boolean {
     return this.savedIds.has(institutionId);
   }
@@ -378,7 +421,6 @@ class DataService {
     return this.institutions.filter(item => this.savedIds.has(item.id));
   }
 
-  // Comparison Management
   public getComparisonIds(): string[] {
     return Array.from(this.comparisonIds);
   }
