@@ -1,9 +1,16 @@
+import { config } from '../config';
 import {
   InMemoryCityRepository,
   InMemoryInstitutionRepository,
   InMemoryReviewRepository,
   InMemoryUserRepository
 } from './inMemoryRepositories';
+import {
+  PrismaCityRepository,
+  PrismaInstitutionRepository,
+  PrismaReviewRepository,
+  PrismaUserRepository
+} from './prismaRepositories';
 import { ICityRepository, IInstitutionRepository, IReviewRepository, IUserRepository } from './interfaces';
 
 class RepositoryFactory {
@@ -13,12 +20,19 @@ class RepositoryFactory {
   private userRepo: IUserRepository;
 
   constructor() {
-    // In current configuration, initialize with in-memory repositories populated from seed data.
-    // When DATABASE_URL is configured for Neon, Prisma repository implementations can be swapped seamlessly.
-    this.institutionRepo = new InMemoryInstitutionRepository();
-    this.cityRepo = new InMemoryCityRepository();
-    this.reviewRepo = new InMemoryReviewRepository();
-    this.userRepo = new InMemoryUserRepository();
+    if (config.databaseUrl) {
+      console.log('⚡ Initializing Prisma Repositories connected to Neon DB');
+      this.institutionRepo = new PrismaInstitutionRepository();
+      this.cityRepo = new PrismaCityRepository();
+      this.reviewRepo = new PrismaReviewRepository();
+      this.userRepo = new PrismaUserRepository();
+    } else {
+      console.log('ℹ️ Initializing In-Memory Repositories from seed data');
+      this.institutionRepo = new InMemoryInstitutionRepository();
+      this.cityRepo = new InMemoryCityRepository();
+      this.reviewRepo = new InMemoryReviewRepository();
+      this.userRepo = new InMemoryUserRepository();
+    }
   }
 
   getInstitutionRepository(): IInstitutionRepository {

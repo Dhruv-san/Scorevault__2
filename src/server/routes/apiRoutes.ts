@@ -8,8 +8,9 @@ const router = Router();
 const instRepo = repositoryFactory.getInstitutionRepository();
 const cityRepo = repositoryFactory.getCityRepository();
 const reviewRepo = repositoryFactory.getReviewRepository();
+const userRepo = repositoryFactory.getUserRepository();
 
-// Search Filter Query Validation Schema
+// Search Filter & Pagination Validation Schema
 const searchFilterSchema = z.object({
   query: z.string().optional(),
   city: z.string().optional(),
@@ -21,7 +22,9 @@ const searchFilterSchema = z.object({
   ownership: z.enum(['Private', 'Public', 'Government-Aided', 'All']).optional(),
   hostel: z.string().optional().transform(v => v === 'true'),
   verifiedOnly: z.string().optional().transform(v => v === 'true'),
-  sortBy: z.enum(['recommended', 'highest_rated', 'most_reviewed', 'lowest_fees', 'established']).optional()
+  sortBy: z.enum(['recommended', 'highest_rated', 'most_reviewed', 'lowest_fees', 'established']).optional(),
+  page: z.string().optional().transform(v => v ? parseInt(v, 10) : 1),
+  limit: z.string().optional().transform(v => v ? parseInt(v, 10) : 20)
 });
 
 // GET /api/institutions
@@ -129,7 +132,7 @@ const addReviewSchema = z.object({
 router.post('/reviews', validateBody(addReviewSchema), async (req: Request, res: Response) => {
   try {
     const created = await reviewRepo.addReview(req.body);
-    sendSuccess(res, created, 217);
+    sendSuccess(res, created, 201);
   } catch (error: any) {
     sendError(res, error.message || 'Failed to submit review');
   }
@@ -192,6 +195,42 @@ router.patch('/admin/reviews/:id', validateBody(moderateSchema), async (req: Req
     sendSuccess(res, { reviewId: id, action, status: 'updated' });
   } catch (error: any) {
     sendError(res, error.message || 'Failed to update review moderation status');
+  }
+});
+
+// GET /api/users/:id
+router.get('/users/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const user = await userRepo.getUserById(id);
+    if (!user) {
+      return sendError(res, 'User not found', 404);
+    }
+    sendSuccess(res, user);
+  } catch (error: any) {
+    sendError(res, error.message || 'Failed to fetch user profile');
+  }
+});
+
+// Institution Claim Request Schema
+const claimSchema = z.object({
+  institutionId: z.string().min(1),
+  userId: z.string().min(1),
+  officialEmail: z.string().email(),
+  designation: z.string().min(2),
+  documentUrl: z.string().optional()
+});
+
+// POST /api/claims
+router.post('/claims', validateBody(claimSchema), async (req: Request, res: Response) => {
+  try {
+    sendSuccess(res, {
+      claimId: `claim-${Date.now()}`,
+      status: 'pending',
+      message: 'Institution representative claim submitted for administrative verification.'
+    }, 201);
+  } catch (error: any) {
+    sendError(res, error.message || 'Failed to submit institution claim');
   }
 });
 
