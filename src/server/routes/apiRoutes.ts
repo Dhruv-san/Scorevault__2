@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { repositoryFactory } from '../repositories';
 import { sendError, sendSuccess, validateBody, validateQuery } from '../middleware/apiHelpers';
 import { authenticateJwt, requireRole, AuthenticatedRequest } from '../middleware/auth';
+import { prisma } from '../repositories/prismaRepositories';
 
 const router = Router();
 
@@ -11,13 +12,65 @@ const cityRepo = repositoryFactory.getCityRepository();
 const reviewRepo = repositoryFactory.getReviewRepository();
 const userRepo = repositoryFactory.getUserRepository();
 
+// Search Autocomplete / Suggestions Endpoint
+router.get('/search/suggestions', async (req: Request, res: Response) => {
+  try {
+    const q = ((req.query.q as string) || '').trim().toLowerCase();
+    if (!q || q.length < 2) {
+      return sendSuccess(res, { institutions: [], cities: [], courses: [] });
+    }
+
+    const allInsts = await instRepo.getInstitutions();
+    const allCities = await cityRepo.getCities();
+
+    const matchingInsts = allInsts
+      .filter(i =>
+        i.name.toLowerCase().includes(q) ||
+        i.shortName.toLowerCase().includes(q) ||
+        i.locality.toLowerCase().includes(q) ||
+        i.pinCode.includes(q)
+      )
+      .slice(0, 5)
+      .map(i => ({ id: i.id, slug: i.slug, name: i.name, city: i.city, type: i.type, rating: i.rating }));
+
+    const matchingCities = allCities
+      .filter(c => c.name.toLowerCase().includes(q) || c.state.toLowerCase().includes(q))
+      .slice(0, 4)
+      .map(c => ({ id: c.id, name: c.name, state: c.state }));
+
+    const coursesSet = new Set<string>();
+    allInsts.forEach(i => {
+      i.courses.forEach(c => {
+        if (c.name.toLowerCase().includes(q) || c.degree.toLowerCase().includes(q)) {
+          coursesSet.add(`${c.name} (${c.degree})`);
+        }
+      });
+    });
+
+    const matchingCourses = Array.from(coursesSet).slice(0, 4);
+
+    sendSuccess(res, {
+      institutions: matchingInsts,
+      cities: matchingCities,
+      courses: matchingCourses
+    });
+  } catch (error: any) {
+    sendError(res, error.message || 'Failed to fetch suggestions');
+  }
+});
+
 // Search Filter & Pagination Validation Schema
 const searchFilterSchema = z.object({
   query: z.string().optional(),
   city: z.string().optional(),
+  locality: z.string().optional(),
+  pincode: z.string().optional(),
+  state: z.string().optional(),
   type: z.enum(['School', 'College', 'University', 'All']).optional(),
   category: z.string().optional(),
   board: z.string().optional(),
+  course: z.string().optional(),
+  degree: z.string().optional(),
   minRating: z.string().optional().transform(v => v ? parseFloat(v) : undefined),
   maxFee: z.string().optional().transform(v => v ? parseFloat(v) : undefined),
   ownership: z.enum(['Private', 'Public', 'Government-Aided', 'All']).optional(),
