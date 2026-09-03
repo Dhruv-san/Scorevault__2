@@ -5,6 +5,7 @@ import { GoogleGenAI, ThinkingLevel } from '@google/genai';
 import { createServer as createViteServer } from 'vite';
 import { config } from './src/server/config';
 import apiRoutes from './src/server/routes/apiRoutes';
+import authRoutes from './src/server/routes/authRoutes';
 import { errorHandler } from './src/server/middleware/apiHelpers';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -14,7 +15,8 @@ const app = express();
 
 app.use(express.json());
 
-// Mount modular API routes
+// Mount API and Auth routes
+app.use('/api/auth', authRoutes);
 app.use('/api', apiRoutes);
 
 // Lazy initialized Gemini client

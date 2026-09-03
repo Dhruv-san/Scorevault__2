@@ -27,6 +27,7 @@ enum UserRole {
   alumni
   teacher
   institution_rep
+  moderator
   admin
 }
 
@@ -102,6 +103,7 @@ model User {
   id                  String             @id @default(uuid())
   name                String
   email               String             @unique
+  passwordHash        String?
   phone               String?
   avatar              String?
   role                UserRole           @default(student)

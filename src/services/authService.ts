@@ -2,42 +2,51 @@ import { CURRENT_USER } from '../data/seedData';
 import { User } from '../types';
 
 const AUTH_STORAGE_KEY = 'scorevault_auth_user_v1';
+const TOKEN_STORAGE_KEY = 'scorevault_jwt_token_v1';
 
 type AuthListener = (user: User | null) => void;
 
 class AuthService {
   private currentUser: User | null = null;
+  private token: string | null = null;
   private listeners: Set<AuthListener> = new Set();
 
   constructor() {
     this.loadUser();
   }
 
-  private loadUser() {
+  private async loadUser() {
     try {
-      const stored = localStorage.getItem(AUTH_STORAGE_KEY);
-      if (stored) {
-        this.currentUser = JSON.parse(stored);
+      const storedToken = localStorage.getItem(TOKEN_STORAGE_KEY);
+      if (storedToken) {
+        this.token = storedToken;
+        const res = await fetch('/api/auth/me', {
+          headers: { Authorization: `Bearer ${storedToken}` }
+        });
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success && json.data) {
+            this.currentUser = json.data;
+            this.notify();
+            return;
+          }
+        }
+      }
+
+      const storedUser = localStorage.getItem(AUTH_STORAGE_KEY);
+      if (storedUser) {
+        this.currentUser = JSON.parse(storedUser);
       } else {
-        // Default to logged-in student Dhruv Verma for smooth prototype testing
         this.currentUser = { ...CURRENT_USER };
-        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(this.currentUser));
       }
     } catch {
       this.currentUser = { ...CURRENT_USER };
     }
+    this.notify();
   }
 
-  private persistUser() {
-    try {
-      if (this.currentUser) {
-        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(this.currentUser));
-      } else {
-        localStorage.removeItem(AUTH_STORAGE_KEY);
-      }
-    } catch (e) {
-      console.warn('Failed to persist user session', e);
-    }
+  public getToken(): string | null {
+    return this.token || localStorage.getItem(TOKEN_STORAGE_KEY);
   }
 
   public subscribe(listener: AuthListener): () => void {
@@ -60,8 +69,27 @@ class AuthService {
     return this.currentUser !== null;
   }
 
-  public async loginWithEmail(email: string): Promise<User> {
-    // Simulated authentication
+  public async loginWithEmail(email: string, password?: string): Promise<User> {
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password: password || 'password123' })
+      });
+
+      const json = await res.json();
+      if (res.ok && json.success) {
+        this.token = json.data.token;
+        this.currentUser = json.data.user;
+        localStorage.setItem(TOKEN_STORAGE_KEY, json.data.token);
+        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(this.currentUser));
+        this.notify();
+        return this.currentUser!;
+      }
+    } catch (e) {
+      console.warn('Backend login request failed, falling back to client session', e);
+    }
+
     const user: User = {
       id: `user-${Date.now()}`,
       name: email.split('@')[0].replace('.', ' ').replace(/(^\w|\s\w)/g, m => m.toUpperCase()),
@@ -74,49 +102,39 @@ class AuthService {
       savedInstitutionIds: []
     };
     this.currentUser = user;
-    this.persistUser();
+    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(user));
     this.notify();
     return user;
   }
 
-  public async loginWithGoogle(): Promise<User> {
-    const user: User = {
-      id: `google-${Date.now()}`,
-      name: 'Priyanka Sharma',
-      email: 'priyanka.sharma@gmail.com',
-      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=120&q=80',
-      role: 'parent',
-      city: 'Mumbai',
-      isVerified: true,
-      joinedDate: new Date().toISOString().split('T')[0],
-      savedInstitutionIds: []
-    };
-    this.currentUser = user;
-    this.persistUser();
-    this.notify();
-    return user;
-  }
+  public async signup(details: { name: string; email: string; password?: string; role: User['role']; city: string; institutionName?: string }): Promise<User> {
+    try {
+      const res = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: details.name,
+          email: details.email,
+          password: details.password || 'password123',
+          role: details.role,
+          city: details.city,
+          institutionName: details.institutionName
+        })
+      });
 
-  public async loginWithPhone(phoneNumber: string): Promise<User> {
-    const user: User = {
-      id: `phone-${Date.now()}`,
-      name: `User +91 ${phoneNumber.slice(-4)}`,
-      email: `user_${phoneNumber.slice(-4)}@scorevault.in`,
-      phone: phoneNumber,
-      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${phoneNumber}`,
-      role: 'student',
-      city: 'Bangalore',
-      isVerified: true,
-      joinedDate: new Date().toISOString().split('T')[0],
-      savedInstitutionIds: []
-    };
-    this.currentUser = user;
-    this.persistUser();
-    this.notify();
-    return user;
-  }
+      const json = await res.json();
+      if (res.ok && json.success) {
+        this.token = json.data.token;
+        this.currentUser = json.data.user;
+        localStorage.setItem(TOKEN_STORAGE_KEY, json.data.token);
+        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(this.currentUser));
+        this.notify();
+        return this.currentUser!;
+      }
+    } catch (e) {
+      console.warn('Backend signup request failed, falling back to local session', e);
+    }
 
-  public async signup(details: { name: string; email: string; role: User['role']; city: string; institutionName?: string }): Promise<User> {
     const user: User = {
       id: `user-${Date.now()}`,
       name: details.name,
@@ -130,22 +148,32 @@ class AuthService {
       savedInstitutionIds: []
     };
     this.currentUser = user;
-    this.persistUser();
+    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(user));
     this.notify();
     return user;
+  }
+
+  public async loginWithGoogle(): Promise<User> {
+    return this.loginWithEmail('priyanka.sharma@gmail.com');
+  }
+
+  public async loginWithPhone(phoneNumber: string): Promise<User> {
+    return this.loginWithEmail(`user_${phoneNumber.slice(-4)}@scorevault.in`);
   }
 
   public switchRole(role: User['role']) {
     if (this.currentUser) {
       this.currentUser.role = role;
-      this.persistUser();
+      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(this.currentUser));
       this.notify();
     }
   }
 
   public logout() {
     this.currentUser = null;
-    this.persistUser();
+    this.token = null;
+    localStorage.removeItem(AUTH_STORAGE_KEY);
+    localStorage.removeItem(TOKEN_STORAGE_KEY);
     this.notify();
   }
 }

@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { repositoryFactory } from '../repositories';
 import { sendError, sendSuccess, validateBody, validateQuery } from '../middleware/apiHelpers';
+import { authenticateJwt, requireRole, AuthenticatedRequest } from '../middleware/auth';
 
 const router = Router();
 
@@ -169,8 +170,9 @@ router.post('/reports', validateBody(reportSchema), async (req: Request, res: Re
   }
 });
 
+// Protected Admin Endpoints
 // GET /api/admin/reports
-router.get('/admin/reports', async (req: Request, res: Response) => {
+router.get('/admin/reports', authenticateJwt, requireRole(['admin', 'moderator']), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const reports = await reviewRepo.getReportedReviews();
     sendSuccess(res, reports);
@@ -184,7 +186,7 @@ const moderateSchema = z.object({
   action: z.enum(['approve', 'reject', 'flag'])
 });
 
-router.patch('/admin/reviews/:id', validateBody(moderateSchema), async (req: Request, res: Response) => {
+router.patch('/admin/reviews/:id', authenticateJwt, requireRole(['admin', 'moderator']), validateBody(moderateSchema), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { id } = req.params;
     const { action } = req.body;
