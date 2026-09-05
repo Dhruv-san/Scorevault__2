@@ -111,11 +111,13 @@ model User {
   institutionName     String?
   cityName            String?
   isVerified          Boolean            @default(false)
+  isSuspended         Boolean            @default(false)
   joinedDate          DateTime           @default(now())
   reviews             Review[]
   bookmarks           Bookmark[]
   reports             Report[]           @relation("UserReports")
   claims              InstitutionClaim[]
+  auditLogs           AuditLog[]         @relation("AdminAuditLogs")
   createdAt           DateTime           @default(now())
   updatedAt           DateTime           @updatedAt
 
@@ -172,6 +174,7 @@ model Institution {
   trending            Boolean            @default(false)
   verifiedInstitution Boolean            @default(false)
   claimedByRep        Boolean            @default(false)
+  isArchived          Boolean            @default(false)
   facilities          Facility[]         @relation("InstitutionFacilities")
   courses             Course[]
   photos              Photo[]
@@ -342,4 +345,18 @@ model InstitutionClaim {
 
   @@index([institutionId])
   @@index([userId])
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  action     String
+  adminId    String
+  admin      User     @relation("AdminAuditLogs", fields: [adminId], references: [id], onDelete: Cascade)
+  targetType String
+  targetId   String
+  details    String?
+  createdAt  DateTime @default(now())
+
+  @@index([adminId])
+  @@index([targetType])
 }

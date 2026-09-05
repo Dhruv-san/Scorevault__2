@@ -1,12 +1,12 @@
 import express, { Request, Response } from 'express';
 import path from 'path';
-import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { GoogleGenAI } from '@google/genai';
 import { createServer as createViteServer } from 'vite';
 import { config } from './src/server/config';
 import apiRoutes from './src/server/routes/apiRoutes';
 import authRoutes from './src/server/routes/authRoutes';
+import adminRoutes from './src/server/routes/adminRoutes';
 import { errorHandler } from './src/server/middleware/apiHelpers';
 import { repositoryFactory } from './src/server/repositories';
 
@@ -17,11 +17,12 @@ const app = express();
 
 app.use(express.json());
 
-// Mount API and Auth routes
+// Mount API, Auth, and Admin routes
 app.use('/api/auth', authRoutes);
+app.use('/api/admin', adminRoutes);
 app.use('/api', apiRoutes);
 
-// XML Sitemap Endpoint for Search Engine Indexing
+// XML Sitemap Endpoint
 app.get('/sitemap.xml', async (req: Request, res: Response) => {
   try {
     const instRepo = repositoryFactory.getInstitutionRepository();
@@ -34,16 +35,13 @@ app.get('/sitemap.xml', async (req: Request, res: Response) => {
     let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
     xml += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
 
-    // Static pages
     xml += `  <url><loc>${baseUrl}/</loc><changefreq>daily</changefreq><priority>1.0</priority></url>\n`;
     xml += `  <url><loc>${baseUrl}/search</loc><changefreq>daily</changefreq><priority>0.9</priority></url>\n`;
 
-    // Institution pages
     institutions.forEach(inst => {
       xml += `  <url><loc>${baseUrl}/institution/${inst.slug}</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>\n`;
     });
 
-    // City Hubs
     cities.forEach(c => {
       const citySlug = encodeURIComponent(c.name.toLowerCase());
       xml += `  <url><loc>${baseUrl}/schools/${citySlug}</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>\n`;
