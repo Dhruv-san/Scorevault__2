@@ -3,6 +3,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { GoogleGenAI } from '@google/genai';
 import { createServer as createViteServer } from 'vite';
+import rateLimit from 'express-rate-limit';
 import { config } from './src/server/config';
 import apiRoutes from './src/server/routes/apiRoutes';
 import authRoutes from './src/server/routes/authRoutes';
@@ -17,8 +18,23 @@ const app = express();
 
 app.use(express.json());
 
-// Mount API, Auth, and Admin routes
-app.use('/api/auth', authRoutes);
+// Rate Limiter for Authentication and Mutation endpoints
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20, // 20 requests per IP per window
+  message: { success: false, error: 'Too many authentication attempts. Please try again later.' }
+});
+
+const mutationLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  message: { success: false, error: 'Rate limit exceeded. Please slow down.' }
+});
+
+// Mount Rate-Limited API, Auth, and Admin routes
+app.use('/api/auth', authLimiter, authRoutes);
+app.use('/api/reviews', mutationLimiter);
+app.use('/api/claims', mutationLimiter);
 app.use('/api/admin', adminRoutes);
 app.use('/api', apiRoutes);
 
