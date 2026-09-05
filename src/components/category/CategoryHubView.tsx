@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowLeft, School, GraduationCap, Building, Briefcase, Stethoscope, Landmark, BookOpen } from 'lucide-react';
 import { Institution } from '../../types';
 import { dataService } from '../../services/dataService';
 import { InstitutionCard } from '../common/InstitutionCard';
+import { Breadcrumbs } from '../common/Breadcrumbs';
+import { updatePageSeo } from '../../utils/seo';
 
 interface CategoryHubViewProps {
   initialCategory?: string;
@@ -56,19 +58,30 @@ export const CategoryHubView: React.FC<CategoryHubViewProps> = ({
   };
 
   const currentMeta = categoryMeta[category] || categoryMeta['Schools'];
+
+  useEffect(() => {
+    updatePageSeo({
+      title: `${currentMeta.title} - Ratings & Admissions`,
+      description: currentMeta.desc,
+      canonicalUrl: `https://scorevault.in/categories/${encodeURIComponent(category.toLowerCase())}`
+    });
+  }, [category, currentMeta]);
+
   const institutions = dataService.getInstitutionsByCategory(category);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <article className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       
-      {/* Back button */}
-      <button
-        onClick={onBack}
-        className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-950 mb-4 transition-colors"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        <span>Back</span>
-      </button>
+      {/* Navigation & Breadcrumbs */}
+      <div className="mb-4">
+        <Breadcrumbs
+          onHomeClick={onBack}
+          items={[
+            { label: 'Categories', onClick: onBack },
+            { label: category }
+          ]}
+        />
+      </div>
 
       {/* Category Pills Navigation */}
       <div className="flex items-center gap-2 overflow-x-auto pb-2 mb-6">
@@ -88,7 +101,7 @@ export const CategoryHubView: React.FC<CategoryHubViewProps> = ({
       </div>
 
       {/* Header Banner */}
-      <div className="bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-2xs mb-8">
+      <header className="bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-2xs mb-8">
         <div className="flex items-center gap-3 mb-2">
           <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center">
             {currentMeta.icon}
@@ -100,10 +113,10 @@ export const CategoryHubView: React.FC<CategoryHubViewProps> = ({
         <p className="text-xs sm:text-sm text-slate-600 max-w-3xl leading-relaxed">
           {currentMeta.desc}
         </p>
-      </div>
+      </header>
 
       {/* Grid of Institutions */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {institutions.map(inst => (
           <InstitutionCard
             key={inst.id}
@@ -111,8 +124,8 @@ export const CategoryHubView: React.FC<CategoryHubViewProps> = ({
             onSelect={onSelectInstitution}
           />
         ))}
-      </div>
+      </section>
 
-    </div>
+    </article>
   );
 };
