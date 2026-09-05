@@ -22,7 +22,8 @@ import {
   Home, 
   IndianRupee, 
   ArrowLeft, 
-  Check 
+  Check,
+  Building
 } from 'lucide-react';
 import { Institution, Review } from '../../types';
 import { dataService } from '../../services/dataService';
@@ -31,6 +32,7 @@ import { StarRating } from '../common/StarRating';
 import { Badge } from '../common/Badge';
 import { WriteReviewModal } from './WriteReviewModal';
 import { ReportReviewModal } from './ReportReviewModal';
+import { ClaimInstitutionModal } from './ClaimInstitutionModal';
 import { askScorevaultAdvisor } from '../../services/aiService';
 
 interface InstitutionProfileViewProps {
@@ -57,6 +59,7 @@ export const InstitutionProfileView: React.FC<InstitutionProfileViewProps> = ({
   const [showShareToast, setShowShareToast] = useState(false);
 
   const [writeReviewOpen, setWriteReviewOpen] = useState(false);
+  const [claimModalOpen, setClaimModalOpen] = useState(false);
   const [reportingReview, setReportingReview] = useState<Review | null>(null);
 
   // AI Fact Check state
@@ -128,7 +131,6 @@ Verify NIRF accreditation, authentic placement stats, entrance exam cutoffs (JEE
     }
   };
 
-  // 5 star distribution percentage calculations
   const totalDistributionReviews = Math.max(1, institution.reviewCount);
   const ratingDist = institution.ratingDistribution || { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
 
@@ -155,6 +157,14 @@ Verify NIRF accreditation, authentic placement stats, entrance exam cutoffs (JEE
           </button>
 
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => setClaimModalOpen(true)}
+              className="hidden sm:flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700"
+            >
+              <Building className="w-3.5 h-3.5 text-blue-600" />
+              <span>Claim Representative Profile</span>
+            </button>
+
             <button
               onClick={handleToggleCompare}
               className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors ${
@@ -206,7 +216,6 @@ Verify NIRF accreditation, authentic placement stats, entrance exam cutoffs (JEE
 
       {/* Hero Header Section */}
       <div className="relative bg-white border-b border-slate-200">
-        {/* Cover Photo */}
         <div className="relative h-48 sm:h-72 w-full bg-slate-900 overflow-hidden">
           <img
             src={institution.heroImage}
@@ -215,7 +224,6 @@ Verify NIRF accreditation, authentic placement stats, entrance exam cutoffs (JEE
           />
           <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/30 to-transparent" />
           
-          {/* Cover Badges */}
           <div className="absolute top-4 left-4 right-4 flex items-center justify-between text-xs">
             <div className="flex items-center gap-2">
               <span className="px-2.5 py-1 rounded-md font-bold tracking-wide uppercase bg-slate-900/90 text-white backdrop-blur-xs border border-white/20">
@@ -243,7 +251,7 @@ Verify NIRF accreditation, authentic placement stats, entrance exam cutoffs (JEE
                 {institution.verifiedInstitution && (
                   <span className="inline-flex items-center gap-1 text-xs font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
                     <ShieldCheck className="w-3.5 h-3.5" />
-                    Verified Institution Profile
+                    Scorevault Verified Profile
                   </span>
                 )}
               </div>
@@ -329,7 +337,6 @@ Verify NIRF accreditation, authentic placement stats, entrance exam cutoffs (JEE
             {/* Left Col: Main Details */}
             <div className="lg:col-span-2 space-y-8">
               
-              {/* Key Metrics Bento Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
                   <span className="text-[11px] font-semibold text-slate-400 block">Annual Fees</span>
@@ -373,7 +380,6 @@ Verify NIRF accreditation, authentic placement stats, entrance exam cutoffs (JEE
                   {institution.description}
                 </p>
 
-                {/* Highlights List */}
                 <div className="mt-6 pt-6 border-t border-slate-100">
                   <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800 mb-3">
                     Institutional Highlights
@@ -427,7 +433,6 @@ Verify NIRF accreditation, authentic placement stats, entrance exam cutoffs (JEE
             {/* Right Col: Quick Info Sidebar */}
             <div className="space-y-6">
               
-              {/* Official Contact Card */}
               <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-2xs space-y-4">
                 <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900">
                   Direct Verification Details
@@ -472,7 +477,6 @@ Verify NIRF accreditation, authentic placement stats, entrance exam cutoffs (JEE
                 </div>
               </div>
 
-              {/* Quick AI Counselor Promo Widget */}
               <div className="bg-gradient-to-br from-blue-50 to-indigo-50/70 p-6 rounded-2xl border border-blue-200 shadow-2xs">
                 <div className="flex items-center gap-2 text-blue-700 text-xs font-bold uppercase tracking-wider mb-2">
                   <Sparkles className="w-4 h-4" />
@@ -509,10 +513,7 @@ Verify NIRF accreditation, authentic placement stats, entrance exam cutoffs (JEE
               </p>
             </div>
 
-            {/* Score & Distribution Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-center pb-8 border-b border-slate-100">
-              
-              {/* Big Score Box */}
               <div className="text-center p-6 bg-slate-50 rounded-2xl border border-slate-200">
                 <div className="text-5xl font-extrabold text-slate-950 font-display">
                   {institution.rating}
@@ -524,7 +525,6 @@ Verify NIRF accreditation, authentic placement stats, entrance exam cutoffs (JEE
                 <p className="text-[11px] text-slate-400">out of 5.0 from {institution.reviewCount} reviews</p>
               </div>
 
-              {/* 5-Star Distribution Bars */}
               <div className="md:col-span-2 space-y-2.5">
                 {[5, 4, 3, 2, 1].map(stars => {
                   const count = ratingDist[stars as 1|2|3|4|5] || 0;
@@ -550,7 +550,6 @@ Verify NIRF accreditation, authentic placement stats, entrance exam cutoffs (JEE
 
             </div>
 
-            {/* Category Scores Rubric */}
             <div>
               <h4 className="text-base font-bold text-slate-900 mb-4 font-display">
                 Detailed Category Breakdown
@@ -581,8 +580,6 @@ Verify NIRF accreditation, authentic placement stats, entrance exam cutoffs (JEE
         {/* TAB 3: ADMISSIONS & INFORMATION */}
         {activeTab === 'info' && (
           <div className="space-y-8">
-            
-            {/* Admissions Overview */}
             <div className="bg-white p-6 sm:p-7 rounded-2xl border border-slate-200 shadow-2xs">
               <h3 className="text-lg font-bold text-slate-950 mb-3 font-display">
                 Admission Criteria & Application
@@ -600,7 +597,6 @@ Verify NIRF accreditation, authentic placement stats, entrance exam cutoffs (JEE
               </div>
             </div>
 
-            {/* Courses Offered Table */}
             <div className="bg-white p-6 sm:p-7 rounded-2xl border border-slate-200 shadow-2xs">
               <h3 className="text-lg font-bold text-slate-950 mb-4 font-display">
                 Courses Offered & Estimated Fee Structure
@@ -634,7 +630,6 @@ Verify NIRF accreditation, authentic placement stats, entrance exam cutoffs (JEE
               </div>
             </div>
 
-            {/* Hostel Facilities */}
             <div className="bg-white p-6 sm:p-7 rounded-2xl border border-slate-200 shadow-2xs">
               <h3 className="text-lg font-bold text-slate-950 mb-2 font-display">
                 Hostel & Residential Life
@@ -650,8 +645,6 @@ Verify NIRF accreditation, authentic placement stats, entrance exam cutoffs (JEE
         {/* TAB 4: REVIEWS */}
         {activeTab === 'reviews' && (
           <div className="space-y-6">
-            
-            {/* Reviews Header & Filters */}
             <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <h3 className="text-lg font-bold text-slate-950 font-display">
@@ -663,7 +656,6 @@ Verify NIRF accreditation, authentic placement stats, entrance exam cutoffs (JEE
               </div>
 
               <div className="flex items-center gap-2 flex-wrap">
-                {/* Reviewer Category Filter */}
                 <select
                   value={reviewerTypeFilter}
                   onChange={e => setReviewerTypeFilter(e.target.value)}
@@ -676,7 +668,6 @@ Verify NIRF accreditation, authentic placement stats, entrance exam cutoffs (JEE
                   <option value="Teacher">Faculty</option>
                 </select>
 
-                {/* Sort Filter */}
                 <select
                   value={reviewSort}
                   onChange={e => setReviewSort(e.target.value)}
@@ -703,7 +694,6 @@ Verify NIRF accreditation, authentic placement stats, entrance exam cutoffs (JEE
               </div>
             </div>
 
-            {/* Review Cards List */}
             {reviews.length > 0 ? (
               <div className="space-y-4">
                 {reviews.map(review => (
@@ -712,7 +702,6 @@ Verify NIRF accreditation, authentic placement stats, entrance exam cutoffs (JEE
                     id={`review-card-${review.id}`}
                     className="bg-white p-6 rounded-2xl border border-slate-200/90 shadow-2xs space-y-4"
                   >
-                    {/* Reviewer Header */}
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex items-center gap-3">
                         <img
@@ -751,7 +740,6 @@ Verify NIRF accreditation, authentic placement stats, entrance exam cutoffs (JEE
                       </div>
                     </div>
 
-                    {/* Headline & Body */}
                     <div>
                       <h4 className="text-base font-bold text-slate-900 mb-1.5 font-display">
                         {review.title}
@@ -761,7 +749,6 @@ Verify NIRF accreditation, authentic placement stats, entrance exam cutoffs (JEE
                       </p>
                     </div>
 
-                    {/* Pros & Cons */}
                     {(review.pros.length > 0 || review.cons.length > 0) && (
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
                         {review.pros.length > 0 && (
@@ -794,7 +781,6 @@ Verify NIRF accreditation, authentic placement stats, entrance exam cutoffs (JEE
                       </div>
                     )}
 
-                    {/* Review Photos */}
                     {review.photos && review.photos.length > 0 && (
                       <div className="flex gap-2 pt-2">
                         {review.photos.map((p, i) => (
@@ -808,7 +794,6 @@ Verify NIRF accreditation, authentic placement stats, entrance exam cutoffs (JEE
                       </div>
                     )}
 
-                    {/* Footer Actions: Helpful Vote & Flag */}
                     <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
                       <button
                         onClick={() => handleHelpfulVote(review.id)}
@@ -928,7 +913,7 @@ Verify NIRF accreditation, authentic placement stats, entrance exam cutoffs (JEE
 
       </div>
 
-      {/* Write Review Modal */}
+      {/* Modals */}
       {writeReviewOpen && (
         <WriteReviewModal
           institution={institution}
@@ -939,7 +924,15 @@ Verify NIRF accreditation, authentic placement stats, entrance exam cutoffs (JEE
         />
       )}
 
-      {/* Report Review Modal */}
+      {claimModalOpen && (
+        <ClaimInstitutionModal
+          institution={institution}
+          isOpen={claimModalOpen}
+          onClose={() => setClaimModalOpen(false)}
+          onRequireAuth={onRequireAuth}
+        />
+      )}
+
       {reportingReview && (
         <ReportReviewModal
           review={reportingReview}

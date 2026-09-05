@@ -68,6 +68,7 @@ enum ClaimStatus {
   pending
   approved
   rejected
+  more_information_required
 }
 
 model State {

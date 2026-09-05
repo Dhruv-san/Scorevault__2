@@ -223,7 +223,6 @@ router.post('/reports', validateBody(reportSchema), async (req: Request, res: Re
   }
 });
 
-// Protected Admin Endpoints
 // GET /api/admin/reports
 router.get('/admin/reports', authenticateJwt, requireRole(['admin', 'moderator']), async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -276,16 +275,103 @@ const claimSchema = z.object({
   documentUrl: z.string().optional()
 });
 
-// POST /api/claims
+// POST /api/claims - Submit representative claim
 router.post('/claims', validateBody(claimSchema), async (req: Request, res: Response) => {
   try {
+    const claim = await prisma.institutionClaim.create({
+      data: {
+        institutionId: req.body.institutionId,
+        userId: req.body.userId,
+        officialEmail: req.body.officialEmail,
+        designation: req.body.designation,
+        documentUrl: req.body.documentUrl || '',
+        status: 'pending'
+      }
+    });
+
     sendSuccess(res, {
-      claimId: `claim-${Date.now()}`,
-      status: 'pending',
+      claimId: claim.id,
+      status: claim.status,
       message: 'Institution representative claim submitted for administrative verification.'
     }, 201);
   } catch (error: any) {
     sendError(res, error.message || 'Failed to submit institution claim');
+  }
+});
+
+// GET /api/admin/claims - List pending institution claims
+router.get('/admin/claims', authenticateJwt, requireRole(['admin', 'moderator']), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const claims = await prisma.institutionClaim.findMany({
+      include: {
+        institution: true,
+        user: true
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+    sendSuccess(res, claims);
+  } catch (error: any) {
+    sendError(res, error.message || 'Failed to fetch claims list');
+  }
+});
+
+// PATCH /api/admin/claims/:id - Evaluate claim status
+const evaluateClaimSchema = z.object({
+  status: z.enum(['pending', 'approved', 'rejected', 'more_information_required'])
+});
+
+router.patch('/admin/claims/:id', authenticateJwt, requireRole(['admin', 'moderator']), validateBody(evaluateClaimSchema), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    const claim = await prisma.institutionClaim.update({
+      where: { id },
+      data: { status: status as any },
+      include: { institution: true, user: true }
+    });
+
+    if (status === 'approved') {
+      await prisma.institution.update({
+        where: { id: claim.institutionId },
+        data: {
+          verifiedInstitution: true,
+          claimedByRep: true
+        }
+      });
+
+      await prisma.user.update({
+        where: { id: claim.userId },
+        data: { role: 'institution_rep' }
+      });
+    }
+
+    sendSuccess(res, claim);
+  } catch (error: any) {
+    sendError(res, error.message || 'Failed to evaluate claim');
+  }
+});
+
+// PATCH /api/rep/institutions/:id - Allow approved representatives to edit permitted profile information
+const repUpdateSchema = z.object({
+  description: z.string().optional(),
+  website: z.string().optional(),
+  phone: z.string().optional(),
+  email: z.string().optional(),
+  admissionsOverview: z.string().optional(),
+  hostelDetails: z.string().optional()
+});
+
+router.patch('/rep/institutions/:id', authenticateJwt, requireRole(['institution_rep', 'admin']), validateBody(repUpdateSchema), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const updated = await prisma.institution.update({
+      where: { id },
+      data: req.body
+    });
+    sendSuccess(res, updated);
+  } catch (error: any) {
+    sendError(res, error.message || 'Failed to update institution profile');
   }
 });
 

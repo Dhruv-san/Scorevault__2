@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  ShieldAlert, 
   ShieldCheck, 
   CheckCircle2, 
   XCircle, 
-  Flag, 
   ArrowLeft, 
   Building2, 
-  Plus, 
-  UserCheck, 
-  AlertTriangle 
+  Building,
+  FileText,
+  Mail,
+  AlertCircle
 } from 'lucide-react';
 import { dataService } from '../../services/dataService';
+import { authService } from '../../services/authService';
 import { ReviewReport, Review } from '../../types';
 
 interface AdminDashboardViewProps {
@@ -20,15 +20,33 @@ interface AdminDashboardViewProps {
 
 export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ onBack }) => {
   const [reportsWithReview, setReportsWithReview] = useState<{ report: ReviewReport; review?: Review }[]>([]);
-  const [activeTab, setActiveTab] = useState<'moderation' | 'institutions'>('moderation');
+  const [claims, setClaims] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState<'moderation' | 'claims' | 'institutions'>('moderation');
   const [feedback, setFeedback] = useState<string | null>(null);
 
   const loadReports = () => {
     setReportsWithReview(dataService.getReportedReviews());
   };
 
+  const loadClaims = () => {
+    const token = authService.getToken();
+    if (!token) return;
+
+    fetch('/api/admin/claims', {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(res => res.json())
+      .then(json => {
+        if (json.success && Array.isArray(json.data)) {
+          setClaims(json.data);
+        }
+      })
+      .catch(() => {});
+  };
+
   useEffect(() => {
     loadReports();
+    loadClaims();
   }, []);
 
   const handleModerate = (reviewId: string, action: 'approve' | 'reject' | 'flag') => {
@@ -36,6 +54,29 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ onBack }
     loadReports();
     setFeedback(`Review status updated to: ${action.toUpperCase()}`);
     setTimeout(() => setFeedback(null), 3000);
+  };
+
+  const handleEvaluateClaim = (claimId: string, status: 'approved' | 'rejected' | 'more_information_required') => {
+    const token = authService.getToken();
+    if (!token) return;
+
+    fetch(`/api/admin/claims/${claimId}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({ status })
+    })
+      .then(res => res.json())
+      .then(json => {
+        if (json.success) {
+          setFeedback(`Claim status updated to: ${status.toUpperCase()}`);
+          loadClaims();
+          setTimeout(() => setFeedback(null), 3000);
+        }
+      })
+      .catch(() => {});
   };
 
   return (
@@ -60,7 +101,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ onBack }
             </h1>
           </div>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Internal community compliance, anti-defamation auditing, and directory management.
+            Internal community compliance, representative claims audit, and directory management.
           </p>
         </div>
 
@@ -73,6 +114,14 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ onBack }
             }`}
           >
             Reported Reviews ({reportsWithReview.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('claims')}
+            className={`px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all ${
+              activeTab === 'claims' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600'
+            }`}
+          >
+            Representative Claims ({claims.length})
           </button>
           <button
             onClick={() => setActiveTab('institutions')}
@@ -130,7 +179,6 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ onBack }
                       </p>
                     )}
 
-                    {/* Review content under review */}
                     {review ? (
                       <div className="bg-white p-4 rounded-xl border border-slate-200 space-y-1.5">
                         <div className="flex items-center justify-between">
@@ -144,7 +192,6 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ onBack }
                       <p className="text-xs text-slate-400">Review content was deleted or unavailable.</p>
                     )}
 
-                    {/* Moderation Actions */}
                     {review && (
                       <div className="flex items-center justify-end gap-2 pt-2">
                         <button
@@ -175,6 +222,94 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ onBack }
                 <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto mb-2" />
                 <h4 className="text-sm font-bold text-slate-800">All Clear!</h4>
                 <p className="text-xs text-slate-400 mt-1">There are no pending flagged reviews in the queue right now.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Claims Queue Tab */}
+      {activeTab === 'claims' && (
+        <div className="space-y-6">
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-2xs">
+            <h3 className="text-base font-bold text-slate-900 mb-1 font-display">
+              Representative Claims Audit
+            </h3>
+            <p className="text-xs text-slate-500 mb-6">
+              Evaluate administrative ownership claims submitted by institutional officials (principals, deans, registrars).
+            </p>
+
+            {claims.length > 0 ? (
+              <div className="space-y-4">
+                {claims.map(claim => (
+                  <div key={claim.id} className="p-5 rounded-xl border border-slate-200 bg-slate-50/50 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Building className="w-4 h-4 text-blue-600" />
+                        <span className="text-sm font-bold text-slate-900">{claim.institution?.name || 'Institution'}</span>
+                      </div>
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                        claim.status === 'approved' ? 'bg-emerald-100 text-emerald-800' :
+                        claim.status === 'rejected' ? 'bg-rose-100 text-rose-800' :
+                        claim.status === 'more_information_required' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'
+                      }`}>
+                        {claim.status.replace(/_/g, ' ')}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-700 bg-white p-3 rounded-lg border border-slate-200">
+                      <div>
+                        <span className="text-slate-400 block text-[10px]">Representative Name</span>
+                        <span className="font-semibold">{claim.user?.name || 'Applicant'}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block text-[10px]">Official Email & Domain</span>
+                        <span className="font-semibold text-blue-600">{claim.officialEmail}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block text-[10px]">Designation</span>
+                        <span className="font-semibold">{claim.designation}</span>
+                      </div>
+                      {claim.documentUrl && (
+                        <div>
+                          <span className="text-slate-400 block text-[10px]">Evidence URL</span>
+                          <a href={claim.documentUrl} target="_blank" rel="noreferrer" className="text-blue-600 underline font-semibold truncate block">
+                            View Auth Document →
+                          </a>
+                        </div>
+                      )}
+                    </div>
+
+                    {claim.status === 'pending' && (
+                      <div className="flex items-center justify-end gap-2 pt-2">
+                        <button
+                          onClick={() => handleEvaluateClaim(claim.id, 'rejected')}
+                          className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold rounded-lg border border-rose-200"
+                        >
+                          Reject Claim
+                        </button>
+                        <button
+                          onClick={() => handleEvaluateClaim(claim.id, 'more_information_required')}
+                          className="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-bold rounded-lg border border-amber-200"
+                        >
+                          Request More Info
+                        </button>
+                        <button
+                          onClick={() => handleEvaluateClaim(claim.id, 'approved')}
+                          className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-xs"
+                        >
+                          Approve Claim & Verify
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="py-12 text-center text-slate-500">
+                <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto mb-2" />
+                <h4 className="text-sm font-bold text-slate-800">No Pending Representative Claims</h4>
+                <p className="text-xs text-slate-400 mt-1">All representative verification requests have been processed.</p>
               </div>
             )}
           </div>
