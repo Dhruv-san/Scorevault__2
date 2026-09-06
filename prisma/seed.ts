@@ -53,8 +53,9 @@ async function main() {
   await prisma.comparisonItem.deleteMany();
   await prisma.comparisonSession.deleteMany();
   await prisma.institution.deleteMany();
-  await prisma.facility.deleteMany();
+  await prisma.location.deleteMany();
   await prisma.city.deleteMany();
+  await prisma.district.deleteMany();
   await prisma.state.deleteMany();
   await prisma.user.deleteMany();
 
@@ -120,44 +121,40 @@ async function main() {
   const lucknowCityId = cityMap.get('Lucknow') || Array.from(cityMap.values())[0];
   const mumbaiCityId = cityMap.get('Mumbai') || Array.from(cityMap.values())[0];
   const delhiCityId = cityMap.get('Delhi NCR') || Array.from(cityMap.values())[0];
-  const bangaloreCityId = cityMap.get('Bangalore') || Array.from(cityMap.values())[0];
 
   // Inst 1: La Martiniere College Lucknow
   const laMartiniere = await prisma.institution.create({
     data: {
       slug: 'la-martiniere-lucknow',
-      name: 'La Martiniere College',
+      canonicalName: 'La Martiniere College Lucknow',
+      displayName: 'La Martiniere College',
       shortName: 'La Marts Lucknow',
       type: 'School',
       category: 'Schools',
-      cityId: lucknowCityId,
-      stateName: 'Uttar Pradesh',
-      locality: 'Hazratganj',
-      address: 'La Martiniere Road, Hazratganj, Lucknow, Uttar Pradesh 226001',
-      pinCode: '226001',
-      lat: 26.8467,
-      lng: 80.9462,
-      establishedYear: 1845,
+      city: { connect: { id: lucknowCityId } },
       ownership: 'Private',
-      affiliation: 'CISCE (ICSE / ISC)',
-      boardOrUniversity: 'CISCE',
-      rating: 4.8,
-      reviewCount: 342,
-      minFee: 120000,
-      maxFee: 280000,
-      feeDisplayText: '₹1.2 Lakh - ₹2.8 Lakh / year',
-      hostelAvailable: true,
-      hostelFees: '₹1,50,000 / year',
-      campusSize: '200 Acres',
-      studentFacultyRatio: '15:1',
-      heroImage: 'https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=1200&q=80',
+      establishmentYear: 1845,
       description: 'La Martiniere College, Lucknow, established in 1845 under the will of Major General Claude Martin, is one of India’s premier heritage residential and day schools. Famed for its iconic Constantia building, academic excellence, and sports traditions.',
-      website: 'https://lamartinierelucknow.org',
-      phone: '+91 522 2235421',
-      email: 'principal@lamartinierelucknow.org',
-      featured: true,
-      trending: true,
-      verifiedInstitution: true,
+      officialWebsite: 'https://lamartinierelucknow.org',
+      officialEmail: 'principal@lamartinierelucknow.org',
+      officialPhone: '+91 522 2235421',
+      location: {
+        create: {
+          address: 'La Martiniere Road, Hazratganj, Lucknow, Uttar Pradesh 226001',
+          locality: 'Hazratganj',
+          cityId: lucknowCityId,
+          stateName: 'Uttar Pradesh',
+          stateCode: 'UP',
+          pincode: '226001',
+          latitude: 26.8467,
+          longitude: 80.9462
+        }
+      },
+      identifiers: {
+        create: {
+          cbseId: 'CISCE-UP001'
+        }
+      },
       courses: {
         create: [
           { name: 'ICSE Middle & High School (Class 6 - 10)', degree: 'School Certificate', duration: '5 Years', annualFee: '₹1,40,000', feePerYear: 140000, eligibility: 'School Entrance Assessment' },
@@ -171,41 +168,35 @@ async function main() {
   const iitBombay = await prisma.institution.create({
     data: {
       slug: 'iit-bombay',
-      name: 'Indian Institute of Technology Bombay',
+      canonicalName: 'Indian Institute of Technology Bombay',
+      displayName: 'IIT Bombay',
       shortName: 'IIT Bombay',
       type: 'College',
       category: 'Engineering',
-      cityId: mumbaiCityId,
-      stateName: 'Maharashtra',
-      locality: 'Powai',
-      address: 'Main Gate Road, Powai, Mumbai, Maharashtra 400076',
-      pinCode: '400076',
-      lat: 19.1334,
-      lng: 72.9133,
-      establishedYear: 1958,
+      city: { connect: { id: mumbaiCityId } },
       ownership: 'Public',
-      affiliation: 'Institute of National Importance (Autonomous)',
-      boardOrUniversity: 'Autonomous',
-      nirfRank: 3,
-      naacGrade: 'A++',
-      rating: 4.9,
-      reviewCount: 890,
-      minFee: 220000,
-      maxFee: 350000,
-      feeDisplayText: '₹2.2 Lakh - ₹3.5 Lakh / year',
-      hostelAvailable: true,
-      campusSize: '550 Acres',
-      studentFacultyRatio: '10:1',
-      averagePlacement: '₹23.5 LPA',
-      highestPlacement: '₹1.4 Cr PA',
-      heroImage: 'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=1200&q=80',
+      establishmentYear: 1958,
       description: 'IIT Bombay is India’s globally ranked engineering institute located on the shores of Powai Lake. Celebrated for Computer Science, Electrical Engineering, Moody campus life, and Techfest.',
-      website: 'https://www.iitb.ac.in',
-      phone: '+91 22 2572 2545',
-      email: 'admissions@iitb.ac.in',
-      featured: true,
-      trending: true,
-      verifiedInstitution: true,
+      officialWebsite: 'https://www.iitb.ac.in',
+      officialEmail: 'admissions@iitb.ac.in',
+      officialPhone: '+91 22 2572 2545',
+      location: {
+        create: {
+          address: 'Main Gate Road, Powai, Mumbai, Maharashtra 400076',
+          locality: 'Powai',
+          cityId: mumbaiCityId,
+          stateName: 'Maharashtra',
+          stateCode: 'MH',
+          pincode: '400076',
+          latitude: 19.1334,
+          longitude: 72.9133
+        }
+      },
+      identifiers: {
+        create: {
+          aisheCode: 'C-24783'
+        }
+      },
       courses: {
         create: [
           { name: 'B.Tech Computer Science Engineering', degree: 'B.Tech', duration: '4 Years', annualFee: '₹2,30,000', feePerYear: 230000, eligibility: 'JEE Advanced Rank < 70' },
@@ -219,40 +210,30 @@ async function main() {
   const stStephens = await prisma.institution.create({
     data: {
       slug: 'st-stephens-delhi',
-      name: "St. Stephen's College",
+      canonicalName: "St. Stephen's College Delhi",
+      displayName: "St. Stephen's College",
       shortName: "St. Stephen's Delhi",
       type: 'College',
       category: 'Science & Arts',
-      cityId: delhiCityId,
-      stateName: 'Delhi NCR',
-      locality: 'North Campus',
-      address: 'University Enclave, North Campus, Delhi 110007',
-      pinCode: '110007',
-      lat: 28.6872,
-      lng: 77.2104,
-      establishedYear: 1881,
+      city: { connect: { id: delhiCityId } },
       ownership: 'Government_Aided',
-      affiliation: 'University of Delhi (DU)',
-      boardOrUniversity: 'University of Delhi',
-      nirfRank: 14,
-      naacGrade: 'A+',
-      rating: 4.7,
-      reviewCount: 210,
-      minFee: 45000,
-      maxFee: 85000,
-      feeDisplayText: '₹45,000 - ₹85,000 / year',
-      hostelAvailable: true,
-      campusSize: '30 Acres',
-      studentFacultyRatio: '12:1',
-      averagePlacement: '₹10.2 LPA',
-      heroImage: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=1200&q=80',
+      establishmentYear: 1881,
       description: "St. Stephen's College is one of the oldest and most prestigious liberal arts and science colleges in India, affiliated with the University of Delhi. Known for academic rigor, distinguished alumni, and red-brick architecture.",
-      website: 'https://www.ststephens.edu',
-      phone: '+91 11 2766 7200',
-      email: 'info@ststephens.edu',
-      featured: true,
-      trending: true,
-      verifiedInstitution: true,
+      officialWebsite: 'https://www.ststephens.edu',
+      officialEmail: 'info@ststephens.edu',
+      officialPhone: '+91 11 2766 7200',
+      location: {
+        create: {
+          address: 'University Enclave, North Campus, Delhi 110007',
+          locality: 'North Campus',
+          cityId: delhiCityId,
+          stateName: 'Delhi NCR',
+          stateCode: 'DL',
+          pincode: '110007',
+          latitude: 28.6872,
+          longitude: 77.2104
+        }
+      },
       courses: {
         create: [
           { name: 'B.A. (Hons) Economics', degree: 'Undergraduate', duration: '3 Years', annualFee: '₹55,000', feePerYear: 55000, eligibility: 'CUET UG Percentile > 99.5%' },
