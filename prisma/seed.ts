@@ -1,286 +1,502 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, SourceType, SectorType, SourceStatus, LicensingStatus, AccessMethod } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-// Data covering all 28 States and 8 Union Territories in India with major educational hubs
-const ALL_INDIAN_STATES = [
-  { name: 'Andhra Pradesh', code: 'AP', cities: ['Visakhapatnam', 'Vijayawada', 'Tirupati'] },
-  { name: 'Arunachal Pradesh', code: 'AR', cities: ['Itanagar'] },
-  { name: 'Assam', code: 'AS', cities: ['Guwahati', 'Silchar'] },
-  { name: 'Bihar', code: 'BR', cities: ['Patna', 'Gaya', 'Muzaffarpur'] },
-  { name: 'Chhattisgarh', code: 'CG', cities: ['Raipur', 'Bhilai'] },
-  { name: 'Goa', code: 'GA', cities: ['Panaji', 'Margao'] },
-  { name: 'Gujarat', code: 'GJ', cities: ['Ahmedabad', 'Surat', 'Vadodara', 'Gandhinagar'] },
-  { name: 'Haryana', code: 'HR', cities: ['Gurugram', 'Faridabad', 'Hisar'] },
-  { name: 'Himachal Pradesh', code: 'HP', cities: ['Shimla', 'Dharamshala', 'Mandi'] },
-  { name: 'Jharkhand', code: 'JH', cities: ['Ranchi', 'Jamshedpur', 'Dhanbad'] },
-  { name: 'Karnataka', code: 'KA', cities: ['Bangalore', 'Mysore', 'Mangalore', 'Hubli'] },
-  { name: 'Kerala', code: 'KL', cities: ['Kochi', 'Thiruvananthapuram', 'Kozhikode'] },
-  { name: 'Madhya Pradesh', code: 'MP', cities: ['Bhopal', 'Indore', 'Gwalior'] },
-  { name: 'Maharashtra', code: 'MH', cities: ['Mumbai', 'Pune', 'Nagpur', 'Nashik'] },
-  { name: 'Manipur', code: 'MN', cities: ['Imphal'] },
-  { name: 'Meghalaya', code: 'ML', cities: ['Shillong'] },
-  { name: 'Mizoram', code: 'MZ', cities: ['Aizawl'] },
-  { name: 'Nagaland', code: 'NL', cities: ['Kohima', 'Dimapur'] },
-  { name: 'Odisha', code: 'OR', cities: ['Bhubaneswar', 'Cuttack', 'Rourkela'] },
-  { name: 'Punjab', code: 'PB', cities: ['Ludhiana', 'Amritsar', 'Jalandhar', 'Patiala'] },
-  { name: 'Rajasthan', code: 'RJ', cities: ['Jaipur', 'Kota', 'Jodhpur', 'Udaipur'] },
-  { name: 'Sikkim', code: 'SK', cities: ['Gangtok'] },
-  { name: 'Tamil Nadu', code: 'TN', cities: ['Chennai', 'Coimbatore', 'Madurai', 'Tiruchirappalli'] },
-  { name: 'Telangana', code: 'TG', cities: ['Hyderabad', 'Warangal'] },
-  { name: 'Tripura', code: 'TR', cities: ['Agartala'] },
-  { name: 'Uttar Pradesh', code: 'UP', cities: ['Lucknow', 'Noida', 'Kanpur', 'Varanasi', 'Agra', 'Prayagraj'] },
-  { name: 'Uttarakhand', code: 'UK', cities: ['Dehradun', 'Roorkee', 'Nainital'] },
-  { name: 'West Bengal', code: 'WB', cities: ['Kolkata', 'Durgapur', 'Siliguri'] },
-  { name: 'Delhi NCR', code: 'DL', cities: ['Delhi NCR', 'New Delhi'] },
-  { name: 'Chandigarh', code: 'CH', cities: ['Chandigarh'] },
-  { name: 'Jammu & Kashmir', code: 'JK', cities: ['Srinagar', 'Jammu'] },
-  { name: 'Ladakh', code: 'LA', cities: ['Leh'] },
-  { name: 'Puducherry', code: 'PY', cities: ['Puducherry'] },
-  { name: 'Andaman & Nicobar', code: 'AN', cities: ['Port Blair'] },
-  { name: 'Dadra & Nagar Haveli and Daman & Diu', code: 'DN', cities: ['Daman'] }
+const PRIMARY_DATA_SOURCES = [
+  // Priority 1
+  {
+    sourceId: 'data_gov_in',
+    organization: 'National Informatics Centre (NIC) / MeitY',
+    sourceName: 'Data.gov.in Open Government Data (OGD) Platform',
+    sourceType: SourceType.open_data_platform,
+    sector: SectorType.open_data,
+    geographicCoverage: 'National',
+    institutionTypes: ['School', 'College', 'University'],
+    officialUrl: 'https://data.gov.in',
+    termsUrl: 'https://data.gov.in/terms-and-conditions',
+    licensingStatus: LicensingStatus.OPEN_LICENSE,
+    accessMethod: AccessMethod.API,
+    apiAvailable: true,
+    apiDocumentationUrl: 'https://data.gov.in/developer',
+    downloadAvailable: true,
+    downloadFormats: ['CSV', 'JSON', 'XML'],
+    machineReadability: 'High',
+    authenticationRequired: true,
+    captchaRequired: false,
+    updateFrequency: 'Quarterly',
+    uniqueIdentifiers: ['udise_code', 'aishe_code'],
+    estimatedCoverage: '1,500,000+ Schools & Colleges',
+    authorityScore: 98.0,
+    coverageScore: 95.0,
+    freshnessScore: 85.0,
+    machineReadabilityScore: 90.0,
+    identifierScore: 95.0,
+    automationScore: 85.0,
+    overallScore: 91.3,
+    ingestionPriority: 1,
+    status: SourceStatus.VERIFIED,
+    notes: 'Official Open Government Data License - India. Clean API structure.'
+  },
+  {
+    sourceId: 'ndap_portal',
+    organization: 'NITI Aayog',
+    sourceName: 'National Data and Analytics Platform (NDAP)',
+    sourceType: SourceType.open_data_platform,
+    sector: SectorType.open_data,
+    geographicCoverage: 'National',
+    institutionTypes: ['School', 'College', 'University'],
+    officialUrl: 'https://ndap.niti.gov.in',
+    termsUrl: 'https://ndap.niti.gov.in/terms-of-use',
+    licensingStatus: LicensingStatus.REUSE_ALLOWED,
+    accessMethod: AccessMethod.DIRECT_DOWNLOAD,
+    apiAvailable: true,
+    downloadAvailable: true,
+    downloadFormats: ['CSV', 'JSON'],
+    machineReadability: 'High',
+    authenticationRequired: false,
+    captchaRequired: false,
+    updateFrequency: 'Annual',
+    uniqueIdentifiers: ['udise_code', 'aishe_code'],
+    estimatedCoverage: 'National Census Datasets',
+    authorityScore: 98.0,
+    coverageScore: 90.0,
+    freshnessScore: 80.0,
+    machineReadabilityScore: 95.0,
+    identifierScore: 90.0,
+    automationScore: 80.0,
+    overallScore: 88.8,
+    ingestionPriority: 1,
+    status: SourceStatus.VERIFIED,
+    notes: 'NITI Aayog standardized cross-sectoral education data.'
+  },
+  {
+    sourceId: 'aishe_portal',
+    organization: 'Ministry of Education',
+    sourceName: 'All India Survey on Higher Education (AISHE)',
+    sourceType: SourceType.government_portal,
+    sector: SectorType.higher_education,
+    geographicCoverage: 'National',
+    institutionTypes: ['College', 'University', 'Standalone_Institute'],
+    officialUrl: 'https://aishe.gov.in',
+    termsUrl: 'https://aishe.gov.in/aishe/termsCondition',
+    licensingStatus: LicensingStatus.REUSE_ALLOWED,
+    accessMethod: AccessMethod.DIRECT_DOWNLOAD,
+    apiAvailable: false,
+    downloadAvailable: true,
+    downloadFormats: ['PDF', 'XLSX'],
+    machineReadability: 'Medium',
+    authenticationRequired: false,
+    captchaRequired: false,
+    updateFrequency: 'Annual',
+    uniqueIdentifiers: ['aishe_code'],
+    estimatedCoverage: '50,000+ Colleges & Universities',
+    authorityScore: 100.0,
+    coverageScore: 98.0,
+    freshnessScore: 85.0,
+    machineReadabilityScore: 70.0,
+    identifierScore: 100.0,
+    automationScore: 65.0,
+    overallScore: 86.3,
+    ingestionPriority: 1,
+    status: SourceStatus.VERIFIED,
+    notes: 'Definitive registry for AISHE Code mapping.'
+  },
+
+  // Priority 2
+  {
+    sourceId: 'ugc_portal',
+    organization: 'University Grants Commission (UGC)',
+    sourceName: 'UGC University Directory & Recognition Portal',
+    sourceType: SourceType.regulatory_council,
+    sector: SectorType.higher_education,
+    geographicCoverage: 'National',
+    institutionTypes: ['University', 'College'],
+    officialUrl: 'https://www.ugc.gov.in',
+    licensingStatus: LicensingStatus.REUSE_RESTRICTED,
+    accessMethod: AccessMethod.MANUAL_REVIEW,
+    apiAvailable: false,
+    downloadAvailable: true,
+    downloadFormats: ['PDF'],
+    machineReadability: 'Medium',
+    authenticationRequired: false,
+    captchaRequired: false,
+    updateFrequency: 'Monthly',
+    uniqueIdentifiers: ['ugc_id'],
+    estimatedCoverage: '1,100+ Universities',
+    authorityScore: 100.0,
+    coverageScore: 100.0,
+    freshnessScore: 90.0,
+    machineReadabilityScore: 60.0,
+    identifierScore: 95.0,
+    automationScore: 50.0,
+    overallScore: 82.5,
+    ingestionPriority: 2,
+    status: SourceStatus.UNDER_REVIEW,
+    notes: 'Official University recognition status.'
+  },
+  {
+    sourceId: 'udise_plus',
+    organization: 'Ministry of Education / Department of School Education',
+    sourceName: 'Unified District Information System for Education Plus (UDISE+)',
+    sourceType: SourceType.government_portal,
+    sector: SectorType.school_education,
+    geographicCoverage: 'National',
+    institutionTypes: ['School'],
+    officialUrl: 'https://udiseplus.gov.in',
+    termsUrl: 'https://udiseplus.gov.in/terms',
+    licensingStatus: LicensingStatus.REUSE_STATUS_UNCLEAR,
+    accessMethod: AccessMethod.MANUAL_REVIEW,
+    apiAvailable: false,
+    downloadAvailable: true,
+    downloadFormats: ['XLSX', 'PDF'],
+    machineReadability: 'Medium',
+    authenticationRequired: true,
+    captchaRequired: true,
+    updateFrequency: 'Annual',
+    uniqueIdentifiers: ['udise_code'],
+    estimatedCoverage: '1,480,000+ Schools',
+    authorityScore: 100.0,
+    coverageScore: 100.0,
+    freshnessScore: 85.0,
+    machineReadabilityScore: 70.0,
+    identifierScore: 100.0,
+    automationScore: 30.0,
+    overallScore: 80.8,
+    ingestionPriority: 2,
+    status: SourceStatus.UNDER_REVIEW,
+    notes: 'CAPTCHA protected portal. Downloadable reports require manual extraction.'
+  },
+
+  // Priority 3
+  {
+    sourceId: 'cbse_saras',
+    organization: 'Central Board of Secondary Education (CBSE)',
+    sourceName: 'CBSE SARAS Affiliation Portal',
+    sourceType: SourceType.regulatory_council,
+    sector: SectorType.school_education,
+    geographicCoverage: 'National',
+    institutionTypes: ['School'],
+    officialUrl: 'https://saras.cbse.gov.in',
+    licensingStatus: LicensingStatus.REUSE_STATUS_UNCLEAR,
+    accessMethod: AccessMethod.MANUAL_REVIEW,
+    apiAvailable: false,
+    downloadAvailable: false,
+    machineReadability: 'Low',
+    authenticationRequired: false,
+    captchaRequired: true,
+    updateFrequency: 'Monthly',
+    uniqueIdentifiers: ['cbse_id'],
+    estimatedCoverage: '28,000+ Affiliated Schools',
+    authorityScore: 95.0,
+    coverageScore: 95.0,
+    freshnessScore: 90.0,
+    machineReadabilityScore: 50.0,
+    identifierScore: 95.0,
+    automationScore: 20.0,
+    overallScore: 74.2,
+    ingestionPriority: 3,
+    status: SourceStatus.DISCOVERED,
+    notes: 'CAPTCHA active. Mark for human review.'
+  },
+  {
+    sourceId: 'aicte_portal',
+    organization: 'All India Council for Technical Education (AICTE)',
+    sourceName: 'AICTE Approved Institutes Portal',
+    sourceType: SourceType.regulatory_council,
+    sector: SectorType.higher_education,
+    geographicCoverage: 'National',
+    institutionTypes: ['College', 'Standalone_Institute'],
+    officialUrl: 'https://www.aicte-india.org',
+    licensingStatus: LicensingStatus.REUSE_STATUS_UNCLEAR,
+    accessMethod: AccessMethod.DIRECT_DOWNLOAD,
+    apiAvailable: false,
+    downloadAvailable: true,
+    downloadFormats: ['XLSX'],
+    machineReadability: 'High',
+    authenticationRequired: false,
+    captchaRequired: false,
+    updateFrequency: 'Annual',
+    uniqueIdentifiers: ['aicte_id'],
+    estimatedCoverage: '10,000+ Technical Colleges',
+    authorityScore: 95.0,
+    coverageScore: 90.0,
+    freshnessScore: 85.0,
+    machineReadabilityScore: 85.0,
+    identifierScore: 90.0,
+    automationScore: 75.0,
+    overallScore: 86.6,
+    ingestionPriority: 3,
+    status: SourceStatus.DISCOVERED,
+    notes: 'Annual approved technical college list.'
+  },
+  {
+    sourceId: 'nirf_ranking',
+    organization: 'National Institutional Ranking Framework (NIRF)',
+    sourceName: 'NIRF Annual India Rankings',
+    sourceType: SourceType.government_portal,
+    sector: SectorType.higher_education,
+    geographicCoverage: 'National',
+    institutionTypes: ['College', 'University'],
+    officialUrl: 'https://www.nirfindia.org',
+    licensingStatus: LicensingStatus.REUSE_ALLOWED,
+    accessMethod: AccessMethod.DIRECT_DOWNLOAD,
+    apiAvailable: false,
+    downloadAvailable: true,
+    downloadFormats: ['PDF', 'HTML'],
+    machineReadability: 'Medium',
+    authenticationRequired: false,
+    captchaRequired: false,
+    updateFrequency: 'Annual',
+    uniqueIdentifiers: ['nirf_id', 'aishe_code'],
+    estimatedCoverage: ' Top 100 - 200 Institutes per Discipline',
+    authorityScore: 100.0,
+    coverageScore: 40.0,
+    freshnessScore: 95.0,
+    machineReadabilityScore: 65.0,
+    identifierScore: 85.0,
+    automationScore: 60.0,
+    overallScore: 74.2,
+    ingestionPriority: 3,
+    status: SourceStatus.DISCOVERED,
+    notes: 'Official ranking disclosures.'
+  },
+
+  // Priority 4 (Professional Regulators & Bodies)
+  {
+    sourceId: 'cisce_locator',
+    organization: 'Council for the Indian School Certificate Examinations (CISCE)',
+    sourceName: 'CISCE School Locator',
+    sourceType: SourceType.regulatory_council,
+    sector: SectorType.school_education,
+    geographicCoverage: 'National',
+    institutionTypes: ['School'],
+    officialUrl: 'https://cisce.org',
+    licensingStatus: LicensingStatus.UNKNOWN,
+    accessMethod: AccessMethod.MANUAL_REVIEW,
+    apiAvailable: false,
+    downloadAvailable: false,
+    machineReadability: 'Low',
+    authenticationRequired: false,
+    captchaRequired: true,
+    updateFrequency: 'Annual',
+    uniqueIdentifiers: ['cisce_code'],
+    estimatedCoverage: '2,800+ ICSE/ISC Schools',
+    authorityScore: 95.0,
+    coverageScore: 80.0,
+    freshnessScore: 85.0,
+    machineReadabilityScore: 40.0,
+    identifierScore: 90.0,
+    automationScore: 20.0,
+    overallScore: 68.3,
+    ingestionPriority: 4,
+    status: SourceStatus.DISCOVERED,
+    notes: 'CISCE school directory.'
+  },
+  {
+    sourceId: 'kvs_sangathan',
+    organization: 'Kendriya Vidyalaya Sangathan (KVS)',
+    sourceName: 'KVS School Directory',
+    sourceType: SourceType.government_portal,
+    sector: SectorType.school_education,
+    geographicCoverage: 'National',
+    institutionTypes: ['School'],
+    officialUrl: 'https://kvsangathan.nic.in',
+    licensingStatus: LicensingStatus.REUSE_ALLOWED,
+    accessMethod: AccessMethod.DIRECT_DOWNLOAD,
+    apiAvailable: false,
+    downloadAvailable: true,
+    downloadFormats: ['PDF'],
+    machineReadability: 'Medium',
+    authenticationRequired: false,
+    captchaRequired: false,
+    updateFrequency: 'Annual',
+    uniqueIdentifiers: ['udise_code', 'cbse_id'],
+    estimatedCoverage: '1,250+ Kendriya Vidyalayas',
+    authorityScore: 95.0,
+    coverageScore: 100.0,
+    freshnessScore: 85.0,
+    machineReadabilityScore: 60.0,
+    identifierScore: 90.0,
+    automationScore: 60.0,
+    overallScore: 81.6,
+    ingestionPriority: 4,
+    status: SourceStatus.DISCOVERED,
+    notes: 'Central government school chain.'
+  },
+  {
+    sourceId: 'nmc_medical',
+    organization: 'National Medical Commission (NMC)',
+    sourceName: 'NMC Approved Medical Colleges Registry',
+    sourceType: SourceType.regulatory_council,
+    sector: SectorType.higher_education,
+    geographicCoverage: 'National',
+    institutionTypes: ['College', 'University'],
+    officialUrl: 'https://www.nmc.org.in',
+    licensingStatus: LicensingStatus.REUSE_STATUS_UNCLEAR,
+    accessMethod: AccessMethod.MANUAL_REVIEW,
+    apiAvailable: false,
+    downloadAvailable: false,
+    machineReadability: 'Low',
+    authenticationRequired: false,
+    captchaRequired: true,
+    updateFrequency: 'Annual',
+    uniqueIdentifiers: ['nmc_id'],
+    estimatedCoverage: '700+ Medical Colleges',
+    authorityScore: 100.0,
+    coverageScore: 100.0,
+    freshnessScore: 90.0,
+    machineReadabilityScore: 40.0,
+    identifierScore: 90.0,
+    automationScore: 20.0,
+    overallScore: 73.3,
+    ingestionPriority: 4,
+    status: SourceStatus.DISCOVERED,
+    notes: 'NMC MBBS college recognition.'
+  },
+  {
+    sourceId: 'bci_law',
+    organization: 'Bar Council of India (BCI)',
+    sourceName: 'BCI Approved Law Colleges Directory',
+    sourceType: SourceType.regulatory_council,
+    sector: SectorType.higher_education,
+    geographicCoverage: 'National',
+    institutionTypes: ['College', 'University'],
+    officialUrl: 'http://www.barcouncilofindia.org',
+    licensingStatus: LicensingStatus.UNKNOWN,
+    accessMethod: AccessMethod.MANUAL_REVIEW,
+    apiAvailable: false,
+    downloadAvailable: true,
+    downloadFormats: ['PDF'],
+    machineReadability: 'Low',
+    authenticationRequired: false,
+    captchaRequired: false,
+    updateFrequency: 'Annual',
+    uniqueIdentifiers: ['bci_id'],
+    estimatedCoverage: '1,500+ Law Faculties',
+    authorityScore: 95.0,
+    coverageScore: 90.0,
+    freshnessScore: 80.0,
+    machineReadabilityScore: 40.0,
+    identifierScore: 85.0,
+    automationScore: 30.0,
+    overallScore: 70.0,
+    ingestionPriority: 4,
+    status: SourceStatus.DISCOVERED,
+    notes: 'BCI law center list.'
+  },
+
+  // Priority 5 (State-specific Sources)
+  {
+    sourceId: 'up_higher_education',
+    organization: 'Department of Higher Education, Uttar Pradesh',
+    sourceName: 'UP State Higher Education Portal',
+    sourceType: SourceType.state_admission_cell,
+    sector: SectorType.state_admission,
+    geographicCoverage: 'State: UP',
+    institutionTypes: ['College', 'University'],
+    officialUrl: 'https://uphed.gov.in',
+    licensingStatus: LicensingStatus.REUSE_STATUS_UNCLEAR,
+    accessMethod: AccessMethod.MANUAL_REVIEW,
+    apiAvailable: false,
+    downloadAvailable: true,
+    downloadFormats: ['PDF'],
+    machineReadability: 'Medium',
+    authenticationRequired: false,
+    captchaRequired: false,
+    updateFrequency: 'Annual',
+    uniqueIdentifiers: ['aishe_code'],
+    estimatedCoverage: 'UP Colleges & State Universities',
+    authorityScore: 90.0,
+    coverageScore: 85.0,
+    freshnessScore: 80.0,
+    machineReadabilityScore: 50.0,
+    identifierScore: 80.0,
+    automationScore: 40.0,
+    overallScore: 70.8,
+    ingestionPriority: 5,
+    status: SourceStatus.DISCOVERED,
+    notes: 'Uttar Pradesh higher education directory.'
+  },
+  {
+    sourceId: 'maharashtra_cet_cell',
+    organization: 'State Common Entrance Test Cell, Maharashtra',
+    sourceName: 'MH CET Admission Portal',
+    sourceType: SourceType.state_admission_cell,
+    sector: SectorType.state_admission,
+    geographicCoverage: 'State: MH',
+    institutionTypes: ['College'],
+    officialUrl: 'https://cetcell.mahacet.org',
+    licensingStatus: LicensingStatus.REUSE_STATUS_UNCLEAR,
+    accessMethod: AccessMethod.MANUAL_REVIEW,
+    apiAvailable: false,
+    downloadAvailable: true,
+    downloadFormats: ['PDF', 'HTML'],
+    machineReadability: 'Medium',
+    authenticationRequired: false,
+    captchaRequired: true,
+    updateFrequency: 'Annual',
+    uniqueIdentifiers: ['aicte_id'],
+    estimatedCoverage: 'Maharashtra Professional Colleges',
+    authorityScore: 90.0,
+    coverageScore: 85.0,
+    freshnessScore: 90.0,
+    machineReadabilityScore: 50.0,
+    identifierScore: 80.0,
+    automationScore: 30.0,
+    overallScore: 70.8,
+    ingestionPriority: 5,
+    status: SourceStatus.DISCOVERED,
+    notes: 'Maharashtra MHT-CET seat matrix.'
+  },
+  {
+    sourceId: 'tn_tnea_portal',
+    organization: 'Directorate of Technical Education, Tamil Nadu',
+    sourceName: 'Tamil Nadu Engineering Admissions (TNEA) Portal',
+    sourceType: SourceType.state_admission_cell,
+    sector: SectorType.state_admission,
+    geographicCoverage: 'State: TN',
+    institutionTypes: ['College'],
+    officialUrl: 'https://www.tneaonline.org',
+    licensingStatus: LicensingStatus.REUSE_STATUS_UNCLEAR,
+    accessMethod: AccessMethod.MANUAL_REVIEW,
+    apiAvailable: false,
+    downloadAvailable: true,
+    downloadFormats: ['PDF'],
+    machineReadability: 'Medium',
+    authenticationRequired: false,
+    captchaRequired: false,
+    updateFrequency: 'Annual',
+    uniqueIdentifiers: ['aicte_id'],
+    estimatedCoverage: '500+ Engineering Colleges in TN',
+    authorityScore: 90.0,
+    coverageScore: 85.0,
+    freshnessScore: 90.0,
+    machineReadabilityScore: 60.0,
+    identifierScore: 80.0,
+    automationScore: 50.0,
+    overallScore: 75.8,
+    ingestionPriority: 5,
+    status: SourceStatus.DISCOVERED,
+    notes: 'TNEA counselling cutoff list.'
+  }
 ];
 
 async function main() {
-  console.log('🧹 Clearing existing database records in Neon DB...');
-  await prisma.report.deleteMany();
-  await prisma.rating.deleteMany();
-  await prisma.review.deleteMany();
-  await prisma.course.deleteMany();
-  await prisma.photo.deleteMany();
-  await prisma.institutionClaim.deleteMany();
-  await prisma.bookmark.deleteMany();
-  await prisma.comparisonItem.deleteMany();
-  await prisma.comparisonSession.deleteMany();
-  await prisma.institution.deleteMany();
-  await prisma.location.deleteMany();
-  await prisma.city.deleteMany();
-  await prisma.district.deleteMany();
-  await prisma.state.deleteMany();
-  await prisma.user.deleteMany();
+  console.log('🧹 Clearing existing Data Source Registry...');
+  await prisma.sourceRecord.deleteMany();
+  await prisma.externalIdentifier.deleteMany();
+  await prisma.ingestionRun.deleteMany();
+  await prisma.dataImport.deleteMany();
+  await prisma.dataSource.deleteMany();
 
-  console.log('🌱 Seeding States and Cities for ALL 36 States & UTs in India...');
-
-  const cityMap = new Map<string, string>(); // cityName -> cityId
-
-  for (const st of ALL_INDIAN_STATES) {
-    const createdState = await prisma.state.create({
-      data: {
-        name: st.name,
-        code: st.code
-      }
+  console.log('📦 Provisioning Data Source Registry entries...');
+  for (const src of PRIMARY_DATA_SOURCES) {
+    await prisma.dataSource.create({
+      data: src as any
     });
-
-    for (const cName of st.cities) {
-      const isPopular = ['Delhi NCR', 'Mumbai', 'Bangalore', 'Lucknow', 'Chennai', 'Kolkata', 'Hyderabad', 'Pune', 'Jaipur', 'Ahmedabad'].includes(cName);
-      const createdCity = await prisma.city.create({
-        data: {
-          name: cName,
-          stateId: createdState.id,
-          popular: isPopular,
-          tagLine: `Premier Educational Hub in ${st.name}`,
-          image: isPopular
-            ? 'https://images.unsplash.com/photo-1570168007204-dfb528c6958f?auto=format&fit=crop&w=600&q=80'
-            : 'https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=600&q=80',
-          institutionCount: 15,
-          schoolCount: 8,
-          collegeCount: 7,
-          description: `${cName} is a top educational destination in ${st.name} offering accredited CBSE/ICSE schools, engineering colleges, and universities.`
-        }
-      });
-
-      cityMap.set(cName, createdCity.id);
-    }
   }
 
-  console.log('👤 Seeding default users...');
-  const userDhruv = await prisma.user.create({
-    data: {
-      name: 'Dhruv Verma',
-      email: 'dhruv.verma@example.com',
-      role: 'student',
-      cityName: 'Delhi NCR',
-      isVerified: true,
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80'
-    }
-  });
-
-  const userPriyanka = await prisma.user.create({
-    data: {
-      name: 'Priyanka Sharma',
-      email: 'priyanka.sharma@gmail.com',
-      role: 'parent',
-      cityName: 'Mumbai',
-      isVerified: true,
-      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=120&q=80'
-    }
-  });
-
-  console.log('🏢 Seeding accredited Institutions across India...');
-
-  const lucknowCityId = cityMap.get('Lucknow') || Array.from(cityMap.values())[0];
-  const mumbaiCityId = cityMap.get('Mumbai') || Array.from(cityMap.values())[0];
-  const delhiCityId = cityMap.get('Delhi NCR') || Array.from(cityMap.values())[0];
-
-  // Inst 1: La Martiniere College Lucknow
-  const laMartiniere = await prisma.institution.create({
-    data: {
-      slug: 'la-martiniere-lucknow',
-      canonicalName: 'La Martiniere College Lucknow',
-      displayName: 'La Martiniere College',
-      shortName: 'La Marts Lucknow',
-      type: 'School',
-      category: 'Schools',
-      city: { connect: { id: lucknowCityId } },
-      ownership: 'Private',
-      establishmentYear: 1845,
-      description: 'La Martiniere College, Lucknow, established in 1845 under the will of Major General Claude Martin, is one of India’s premier heritage residential and day schools. Famed for its iconic Constantia building, academic excellence, and sports traditions.',
-      officialWebsite: 'https://lamartinierelucknow.org',
-      officialEmail: 'principal@lamartinierelucknow.org',
-      officialPhone: '+91 522 2235421',
-      location: {
-        create: {
-          address: 'La Martiniere Road, Hazratganj, Lucknow, Uttar Pradesh 226001',
-          locality: 'Hazratganj',
-          cityId: lucknowCityId,
-          stateName: 'Uttar Pradesh',
-          stateCode: 'UP',
-          pincode: '226001',
-          latitude: 26.8467,
-          longitude: 80.9462
-        }
-      },
-      identifiers: {
-        create: {
-          cbseId: 'CISCE-UP001'
-        }
-      },
-      courses: {
-        create: [
-          { name: 'ICSE Middle & High School (Class 6 - 10)', degree: 'School Certificate', duration: '5 Years', annualFee: '₹1,40,000', feePerYear: 140000, eligibility: 'School Entrance Assessment' },
-          { name: 'ISC Science Stream (Class 11 - 12)', degree: 'Higher Secondary', duration: '2 Years', annualFee: '₹1,80,000', feePerYear: 180000, eligibility: 'ICSE Grade 10 Cutoff > 85%' }
-        ]
-      }
-    }
-  });
-
-  // Inst 2: IIT Bombay
-  const iitBombay = await prisma.institution.create({
-    data: {
-      slug: 'iit-bombay',
-      canonicalName: 'Indian Institute of Technology Bombay',
-      displayName: 'IIT Bombay',
-      shortName: 'IIT Bombay',
-      type: 'College',
-      category: 'Engineering',
-      city: { connect: { id: mumbaiCityId } },
-      ownership: 'Public',
-      establishmentYear: 1958,
-      description: 'IIT Bombay is India’s globally ranked engineering institute located on the shores of Powai Lake. Celebrated for Computer Science, Electrical Engineering, Moody campus life, and Techfest.',
-      officialWebsite: 'https://www.iitb.ac.in',
-      officialEmail: 'admissions@iitb.ac.in',
-      officialPhone: '+91 22 2572 2545',
-      location: {
-        create: {
-          address: 'Main Gate Road, Powai, Mumbai, Maharashtra 400076',
-          locality: 'Powai',
-          cityId: mumbaiCityId,
-          stateName: 'Maharashtra',
-          stateCode: 'MH',
-          pincode: '400076',
-          latitude: 19.1334,
-          longitude: 72.9133
-        }
-      },
-      identifiers: {
-        create: {
-          aisheCode: 'C-24783'
-        }
-      },
-      courses: {
-        create: [
-          { name: 'B.Tech Computer Science Engineering', degree: 'B.Tech', duration: '4 Years', annualFee: '₹2,30,000', feePerYear: 230000, eligibility: 'JEE Advanced Rank < 70' },
-          { name: 'B.Tech Electrical Engineering', degree: 'B.Tech', duration: '4 Years', annualFee: '₹2,30,000', feePerYear: 230000, eligibility: 'JEE Advanced Rank < 300' }
-        ]
-      }
-    }
-  });
-
-  // Inst 3: St. Stephen's College Delhi
-  const stStephens = await prisma.institution.create({
-    data: {
-      slug: 'st-stephens-delhi',
-      canonicalName: "St. Stephen's College Delhi",
-      displayName: "St. Stephen's College",
-      shortName: "St. Stephen's Delhi",
-      type: 'College',
-      category: 'Science & Arts',
-      city: { connect: { id: delhiCityId } },
-      ownership: 'Government_Aided',
-      establishmentYear: 1881,
-      description: "St. Stephen's College is one of the oldest and most prestigious liberal arts and science colleges in India, affiliated with the University of Delhi. Known for academic rigor, distinguished alumni, and red-brick architecture.",
-      officialWebsite: 'https://www.ststephens.edu',
-      officialEmail: 'info@ststephens.edu',
-      officialPhone: '+91 11 2766 7200',
-      location: {
-        create: {
-          address: 'University Enclave, North Campus, Delhi 110007',
-          locality: 'North Campus',
-          cityId: delhiCityId,
-          stateName: 'Delhi NCR',
-          stateCode: 'DL',
-          pincode: '110007',
-          latitude: 28.6872,
-          longitude: 77.2104
-        }
-      },
-      courses: {
-        create: [
-          { name: 'B.A. (Hons) Economics', degree: 'Undergraduate', duration: '3 Years', annualFee: '₹55,000', feePerYear: 55000, eligibility: 'CUET UG Percentile > 99.5%' },
-          { name: 'B.Sc. (Hons) Mathematics', degree: 'Undergraduate', duration: '3 Years', annualFee: '₹52,000', feePerYear: 52000, eligibility: 'CUET UG Science Cutoff' }
-        ]
-      }
-    }
-  });
-
-  console.log('💬 Seeding community reviews...');
-  await prisma.review.create({
-    data: {
-      institutionId: laMartiniere.id,
-      userId: userDhruv.id,
-      reviewerType: 'Alumni',
-      isVerifiedReviewer: true,
-      rating: 5.0,
-      title: 'Unmatched heritage, sports discipline, and lifetime brotherhood',
-      content: 'Studying at La Marts Lucknow shaped my entire personality. Constantia is magical during winter mornings, and the inter-house swimming and debate tradition is unmatched in North India.',
-      pros: ['Rich heritage campus', 'World-class sports grounds', 'Strong global alumni network'],
-      cons: ['Strict regimented discipline', 'Competitive sports selections'],
-      helpfulCount: 28,
-      status: 'approved',
-      courseOrGrade: 'ISC Class 12 Science',
-      yearOfPassingOrCurrent: 2022
-    }
-  });
-
-  await prisma.review.create({
-    data: {
-      institutionId: iitBombay.id,
-      userId: userPriyanka.id,
-      reviewerType: 'Parent',
-      isVerifiedReviewer: true,
-      rating: 5.0,
-      title: 'Best technical education and research ecosystem in South Asia',
-      content: 'My son is in his 3rd year CSE at IIT Bombay. The exposure, peer circle, industrial research grants, and placement corporate ties are second to none in India.',
-      pros: ['Peer group of top national ranks', 'Massive placement median', 'Powai Lake campus beauty'],
-      cons: ['High academic pressure during midterms'],
-      helpfulCount: 42,
-      status: 'approved',
-      courseOrGrade: 'B.Tech CSE',
-      yearOfPassingOrCurrent: 2025
-    }
-  });
-
-  console.log('✅ Database seeding complete for ALL 36 Indian States & UTs!');
+  console.log(`✅ Provisioned ${PRIMARY_DATA_SOURCES.length} authoritative Indian Education Data Sources in Registry!`);
 }
 
 main()

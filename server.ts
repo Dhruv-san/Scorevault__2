@@ -7,6 +7,7 @@ import { config } from './src/server/config';
 import apiRoutes from './src/server/routes/apiRoutes';
 import authRoutes from './src/server/routes/authRoutes';
 import adminRoutes from './src/server/routes/adminRoutes';
+import dataSourceRoutes from './src/server/routes/dataSourceRoutes';
 import { errorHandler } from './src/server/middleware/apiHelpers';
 import { repositoryFactory } from './src/server/repositories';
 
@@ -16,8 +17,8 @@ app.use(express.json());
 
 // Rate Limiter for Authentication and Mutation endpoints
 const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 20, // 20 requests per IP per window
+  windowMs: 15 * 60 * 1000,
+  max: 20,
   message: { success: false, error: 'Too many authentication attempts. Please try again later.' }
 });
 
@@ -27,11 +28,12 @@ const mutationLimiter = rateLimit({
   message: { success: false, error: 'Rate limit exceeded. Please slow down.' }
 });
 
-// Mount Rate-Limited API, Auth, and Admin routes
+// Mount Rate-Limited API, Auth, Admin, and Data Source Governance routes
 app.use('/api/auth', authLimiter, authRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/admin', dataSourceRoutes);
 app.use('/api/reviews', mutationLimiter);
 app.use('/api/claims', mutationLimiter);
-app.use('/api/admin', adminRoutes);
 app.use('/api', apiRoutes);
 
 // XML Sitemap Endpoint

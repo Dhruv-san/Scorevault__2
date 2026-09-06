@@ -2,26 +2,22 @@ import React, { useState, useEffect } from 'react';
 import { 
   ShieldCheck, 
   CheckCircle2, 
-  XCircle, 
   ArrowLeft, 
   Building,
-  Users,
   Search,
-  History,
-  AlertOctagon,
-  FileText,
-  Plus
+  Database
 } from 'lucide-react';
 import { dataService } from '../../services/dataService';
 import { authService } from '../../services/authService';
 import { ReviewReport, Review } from '../../types';
+import { DataSourcesAdminView } from './DataSourcesAdminView';
 
 interface AdminDashboardViewProps {
   onBack: () => void;
 }
 
 export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ onBack }) => {
-  const [activeTab, setActiveTab] = useState<'moderation' | 'claims' | 'users' | 'audit'>('moderation');
+  const [activeTab, setActiveTab] = useState<'moderation' | 'claims' | 'users' | 'datasources' | 'audit'>('moderation');
   const [reportsWithReview, setReportsWithReview] = useState<{ report: ReviewReport; review?: Review }[]>([]);
   const [claims, setClaims] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
@@ -109,6 +105,10 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ onBack }
       });
   };
 
+  if (activeTab === 'datasources') {
+    return <DataSourcesAdminView onBack={() => setActiveTab('moderation')} />;
+  }
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       
@@ -127,11 +127,11 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ onBack }
               <ShieldCheck className="w-4 h-4 text-blue-400" />
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-950 font-display">
-              Scorevault Admin & Audit System
+              Scorevault Admin & Governance Hub
             </h1>
           </div>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Server-enforced user management, claims evaluation, review moderation, and audit logging.
+            Server-enforced user management, claims evaluation, review moderation, and data source registry.
           </p>
         </div>
 
@@ -154,12 +154,21 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ onBack }
             Claims ({claims.length})
           </button>
           <button
+            onClick={() => setActiveTab('datasources')}
+            className={`px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all whitespace-nowrap flex items-center gap-1 ${
+              activeTab === 'datasources' ? 'bg-white text-blue-600 shadow-xs' : 'text-slate-600'
+            }`}
+          >
+            <Database className="w-3.5 h-3.5 text-blue-600" />
+            Data Sources Registry
+          </button>
+          <button
             onClick={() => setActiveTab('users')}
             className={`px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all whitespace-nowrap ${
               activeTab === 'users' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600'
             }`}
           >
-            Users Management
+            Users
           </button>
           <button
             onClick={() => setActiveTab('audit')}
