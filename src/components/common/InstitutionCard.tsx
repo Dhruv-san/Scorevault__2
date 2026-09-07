@@ -1,19 +1,14 @@
 import React, { useState } from 'react';
+import { motion } from 'motion/react';
 import { 
   MapPin, 
   Bookmark, 
   Scale, 
-  Check, 
-  Building2, 
-  GraduationCap, 
   ShieldCheck, 
-  Award, 
-  IndianRupee 
+  Award
 } from 'lucide-react';
 import { Institution } from '../../types';
 import { dataService } from '../../services/dataService';
-import { StarRating } from './StarRating';
-import { Badge } from './Badge';
 
 interface InstitutionCardProps {
   institution: Institution;
@@ -50,10 +45,12 @@ export const InstitutionCard: React.FC<InstitutionCardProps> = ({
   };
 
   return (
-    <div
+    <motion.div
+      whileHover={{ y: -4, scale: 1.01 }}
+      transition={{ duration: 0.2 }}
       id={`institution-card-${institution.slug}`}
       onClick={() => onSelect(institution)}
-      className="group relative bg-white rounded-2xl border border-slate-200/80 hover:border-blue-400/80 shadow-xs hover:shadow-md transition-all duration-200 overflow-hidden cursor-pointer flex flex-col justify-between"
+      className="group relative bg-white rounded-2xl border border-slate-200/80 hover:border-blue-400/80 shadow-xs hover:shadow-xl transition-all duration-300 overflow-hidden cursor-pointer flex flex-col justify-between"
     >
       <div>
         {/* Thumbnail and Tags */}
@@ -61,19 +58,19 @@ export const InstitutionCard: React.FC<InstitutionCardProps> = ({
           <img
             src={institution.heroImage}
             alt={institution.name}
-            className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-300"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             loading="lazy"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-transparent opacity-80" />
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent opacity-80" />
 
           {/* Top Badges */}
           <div className="absolute top-3 left-3 right-3 flex items-center justify-between pointer-events-none">
             <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="px-2 py-0.5 rounded-md text-[11px] font-bold tracking-wide uppercase bg-slate-900/80 text-white backdrop-blur-xs border border-white/10">
+              <span className="px-2 py-0.5 rounded-md text-[11px] font-bold tracking-wide uppercase bg-slate-900/90 text-white backdrop-blur-md border border-white/20">
                 {institution.type}
               </span>
               {institution.nirfRank && (
-                <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-amber-500 text-slate-950 flex items-center gap-1 shadow-2xs">
+                <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-amber-500 text-slate-950 flex items-center gap-1 shadow-xs">
                   <Award className="w-3 h-3" />
                   NIRF #{institution.nirfRank}
                 </span>
@@ -173,10 +170,10 @@ export const InstitutionCard: React.FC<InstitutionCardProps> = ({
           <span>{inCompare ? 'Comparing' : 'Compare'}</span>
         </button>
 
-        <span className="text-xs font-semibold text-blue-600 group-hover:translate-x-0.5 transition-transform flex items-center gap-0.5">
+        <span className="text-xs font-semibold text-blue-600 group-hover:translate-x-1 transition-transform flex items-center gap-0.5">
           View Profile →
         </span>
       </div>
-    </div>
+    </motion.div>
   );
 };

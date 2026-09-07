@@ -1,17 +1,17 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Search, 
   Filter, 
   MapPin, 
   SlidersHorizontal, 
   X, 
-  Check, 
   ArrowUpDown, 
   Building2, 
-  GraduationCap, 
   RotateCcw, 
   Map as MapIcon, 
-  Grid 
+  Grid,
+  Sparkles,
+  BookOpen
 } from 'lucide-react';
 import { Institution, SearchFilterParams } from '../../types';
 import { dataService } from '../../services/dataService';
@@ -41,9 +41,51 @@ export const SearchAndFilterView: React.FC<SearchAndFilterViewProps> = ({
   const [maxFee, setMaxFee] = useState<number>(initialParams?.maxFee || 0);
   const [sortBy, setSortBy] = useState<SearchFilterParams['sortBy']>(initialParams?.sortBy || 'recommended');
   
+  const [suggestions, setSuggestions] = useState<{ institutions: any[]; cities: any[]; courses: string[] }>({
+    institutions: [],
+    cities: [],
+    courses: []
+  });
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'map'>('grid');
   const [selectedMapInstitution, setSelectedMapInstitution] = useState<Institution | null>(null);
+
+  // Sync state to URL parameters for shareable, indexable URLs
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (query) params.set('q', query);
+    if (selectedCity !== 'All') params.set('city', selectedCity);
+    if (selectedType !== 'All') params.set('type', selectedType);
+    if (selectedCategory !== 'All') params.set('category', selectedCategory);
+    if (selectedBoard !== 'All') params.set('board', selectedBoard);
+    if (selectedOwnership !== 'All') params.set('ownership', selectedOwnership);
+    if (minRating > 0) params.set('minRating', minRating.toString());
+    if (hostelOnly) params.set('hostel', 'true');
+    if (verifiedOnly) params.set('verified', 'true');
+    if (sortBy !== 'recommended') params.set('sortBy', sortBy);
+
+    const newRelativePathQuery = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
+    window.history.pushState(null, '', newRelativePathQuery);
+  }, [query, selectedCity, selectedType, selectedCategory, selectedBoard, selectedOwnership, minRating, hostelOnly, verifiedOnly, sortBy]);
+
+  // Live autocomplete fetch
+  useEffect(() => {
+    if (query.trim().length >= 2) {
+      fetch(`/api/search/suggestions?q=${encodeURIComponent(query)}`)
+        .then(res => res.json())
+        .then(json => {
+          if (json.success && json.data) {
+            setSuggestions(json.data);
+            setShowSuggestions(true);
+          }
+        })
+        .catch(() => {});
+    } else {
+      setShowSuggestions(false);
+    }
+  }, [query]);
 
   // Compute filtered institutions
   const filteredResults = useMemo(() => {
@@ -111,7 +153,7 @@ export const SearchAndFilterView: React.FC<SearchAndFilterViewProps> = ({
               Browse Educational Institutions
             </h1>
             <p className="text-xs sm:text-sm text-slate-500 mt-1">
-              Showing <span className="font-bold text-slate-900">{filteredResults.length}</span> accredited schools and colleges in India
+              Showing <span className="font-bold text-slate-900">{filteredResults.length}</span> accredited schools, colleges, and universities across India
             </p>
           </div>
 
@@ -154,25 +196,90 @@ export const SearchAndFilterView: React.FC<SearchAndFilterViewProps> = ({
           </div>
         </div>
 
-        {/* Search & Sort Bar */}
-        <div className="mt-4 flex flex-col sm:flex-row gap-3">
+        {/* Search & Autocomplete Input Bar */}
+        <div className="mt-4 flex flex-col sm:flex-row gap-3 relative">
           <div className="relative flex-1">
             <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
             <input
               type="text"
               id="search-input-field"
-              placeholder="Search by name, city, course, board (e.g. CBSE, B.Tech, Lucknow)..."
+              placeholder="Search by institution name, city, course, board, or pincode (e.g. IIT Bombay, CBSE, B.Tech, 226001)..."
               value={query}
               onChange={e => setQuery(e.target.value)}
+              onFocus={() => query.trim().length >= 2 && setShowSuggestions(true)}
               className="w-full pl-10 pr-9 py-2.5 text-xs sm:text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-blue-600 shadow-2xs"
             />
             {query && (
               <button
-                onClick={() => setQuery('')}
+                onClick={() => { setQuery(''); setShowSuggestions(false); }}
                 className="absolute right-3 top-3 text-slate-400 hover:text-slate-600"
               >
                 <X className="w-4 h-4" />
               </button>
+            )}
+
+            {/* Live Autocomplete Suggestions Box */}
+            {showSuggestions && (suggestions.institutions.length > 0 || suggestions.cities.length > 0 || suggestions.courses.length > 0) && (
+              <div className="absolute top-12 left-0 right-0 z-50 bg-white border border-slate-200 rounded-2xl shadow-xl py-3 text-xs animate-in fade-in duration-100">
+                {suggestions.institutions.length > 0 && (
+                  <div className="mb-2">
+                    <span className="px-4 text-[10px] font-bold uppercase tracking-wider text-slate-400">Institutions</span>
+                    {suggestions.institutions.map(i => (
+                      <div
+                        key={i.id}
+                        onClick={() => {
+                          setQuery(i.name);
+                          setShowSuggestions(false);
+                          const matched = dataService.getInstitutionById(i.id);
+                          if (matched) onSelectInstitution(matched);
+                        }}
+                        className="px-4 py-2 hover:bg-blue-50 cursor-pointer flex items-center justify-between font-semibold text-slate-800"
+                      >
+                        <span className="truncate">{i.name}</span>
+                        <span className="text-[10px] text-slate-400">{i.city} • {i.type}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {suggestions.cities.length > 0 && (
+                  <div className="mb-2 pt-2 border-t border-slate-100">
+                    <span className="px-4 text-[10px] font-bold uppercase tracking-wider text-slate-400">Cities</span>
+                    {suggestions.cities.map(c => (
+                      <div
+                        key={c.id}
+                        onClick={() => {
+                          setSelectedCity(c.name);
+                          setShowSuggestions(false);
+                        }}
+                        className="px-4 py-1.5 hover:bg-blue-50 cursor-pointer flex items-center gap-2 text-slate-700"
+                      >
+                        <MapPin className="w-3.5 h-3.5 text-blue-600" />
+                        <span>{c.name}, {c.state}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {suggestions.courses.length > 0 && (
+                  <div className="pt-2 border-t border-slate-100">
+                    <span className="px-4 text-[10px] font-bold uppercase tracking-wider text-slate-400">Popular Courses</span>
+                    {suggestions.courses.map((course, idx) => (
+                      <div
+                        key={idx}
+                        onClick={() => {
+                          setQuery(course);
+                          setShowSuggestions(false);
+                        }}
+                        className="px-4 py-1.5 hover:bg-blue-50 cursor-pointer flex items-center gap-2 text-slate-700"
+                      >
+                        <BookOpen className="w-3.5 h-3.5 text-amber-500" />
+                        <span>{course}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             )}
           </div>
 
@@ -185,7 +292,7 @@ export const SearchAndFilterView: React.FC<SearchAndFilterViewProps> = ({
                 onChange={e => setSortBy(e.target.value as any)}
                 className="w-full sm:w-auto px-3 py-2.5 text-xs font-semibold bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-blue-600 text-slate-800 shadow-2xs pr-8 cursor-pointer"
               >
-                <option value="recommended">Recommended</option>
+                <option value="recommended">Scorevault Recommendation Index</option>
                 <option value="highest_rated">Highest Rated</option>
                 <option value="most_reviewed">Most Reviewed</option>
                 <option value="lowest_fees">Lowest Fees</option>
@@ -430,13 +537,10 @@ export const SearchAndFilterView: React.FC<SearchAndFilterViewProps> = ({
 
               {/* Map Canvas Frame */}
               <div className="relative w-full h-96 bg-slate-100 rounded-xl overflow-hidden border border-slate-200 flex items-center justify-center p-4">
-                {/* Visual Map Grid Pattern */}
                 <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#3b82f6_1px,transparent_1px)] [background-size:16px_16px]" />
                 
-                {/* Realistic Map Pins */}
                 <div className="relative w-full h-full">
                   {filteredResults.map((inst, index) => {
-                    // Spread coordinates visually across the demo stage
                     const leftPercent = 15 + ((index * 23) % 70);
                     const topPercent = 20 + ((index * 31) % 65);
                     const isSelected = selectedMapInstitution?.id === inst.id;
@@ -464,7 +568,6 @@ export const SearchAndFilterView: React.FC<SearchAndFilterViewProps> = ({
                   })}
                 </div>
 
-                {/* Selected Pin Details Overlay Card */}
                 {selectedMapInstitution && (
                   <div className="absolute bottom-4 left-4 right-4 sm:right-auto sm:w-80 bg-white p-4 rounded-xl border border-slate-200 shadow-xl z-20 animate-in fade-in-50 duration-150">
                     <div className="flex items-start justify-between gap-2 mb-1">

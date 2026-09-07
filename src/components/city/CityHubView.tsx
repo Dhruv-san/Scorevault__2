@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
-import { MapPin, ArrowLeft, Building2, School, GraduationCap, Award } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { MapPin, ArrowLeft, School, GraduationCap } from 'lucide-react';
 import { CITIES_DATA } from '../../data/seedData';
 import { Institution } from '../../types';
 import { dataService } from '../../services/dataService';
 import { InstitutionCard } from '../common/InstitutionCard';
+import { Breadcrumbs } from '../common/Breadcrumbs';
+import { updatePageSeo } from '../../utils/seo';
 
 interface CityHubViewProps {
   initialCityName?: string;
@@ -19,24 +21,32 @@ export const CityHubView: React.FC<CityHubViewProps> = ({
   const [currentCityName, setCurrentCityName] = useState(initialCityName);
   const cityInfo = CITIES_DATA.find(c => c.name.toLowerCase() === currentCityName.toLowerCase()) || CITIES_DATA[0];
 
+  useEffect(() => {
+    updatePageSeo({
+      title: `Best Schools & Colleges in ${cityInfo.name}, ${cityInfo.state}`,
+      description: `Discover top accredited CBSE/ICSE schools, engineering colleges, and universities in ${cityInfo.name}, ${cityInfo.state}. Read student reviews and compare fees.`,
+      canonicalUrl: `https://scorevault.in/schools/${encodeURIComponent(cityInfo.name.toLowerCase())}`
+    });
+  }, [cityInfo]);
+
   const cityInstitutions = dataService.getInstitutionsByCity(cityInfo.name);
   const citySchools = cityInstitutions.filter(i => i.type === 'School');
   const cityColleges = cityInstitutions.filter(i => i.type === 'College' || i.type === 'University');
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <article className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       
-      {/* Top Header */}
+      {/* Top Navigation & Breadcrumbs */}
       <div className="mb-6">
-        <button
-          onClick={onBack}
-          className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-950 mb-3 transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span>Back</span>
-        </button>
+        <Breadcrumbs
+          onHomeClick={onBack}
+          items={[
+            { label: 'Cities', onClick: onBack },
+            { label: cityInfo.name }
+          ]}
+        />
 
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mt-2">
           <div>
             <div className="flex items-center gap-2 text-xs font-bold text-blue-600 uppercase tracking-wider mb-1">
               <MapPin className="w-4 h-4 text-blue-600" />
@@ -68,18 +78,20 @@ export const CityHubView: React.FC<CityHubViewProps> = ({
         </div>
 
         {/* Local Highlights Pills */}
-        <div className="mt-4 flex items-center gap-2 flex-wrap text-xs">
-          <span className="font-semibold text-slate-500">Popular localities:</span>
-          {cityInfo.popularLocalities.map((loc, i) => (
-            <span key={i} className="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 text-[11px] font-medium">
-              {loc}
-            </span>
-          ))}
-        </div>
+        {cityInfo.popularLocalities && cityInfo.popularLocalities.length > 0 && (
+          <div className="mt-4 flex items-center gap-2 flex-wrap text-xs">
+            <span className="font-semibold text-slate-500">Popular localities:</span>
+            {cityInfo.popularLocalities.map((loc, i) => (
+              <span key={i} className="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 text-[11px] font-medium">
+                {loc}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Top Schools in City */}
-      <div className="mt-10">
+      <section className="mt-10">
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-2">
             <School className="w-5 h-5 text-blue-600" />
@@ -105,10 +117,10 @@ export const CityHubView: React.FC<CityHubViewProps> = ({
             More verified schools in {cityInfo.name} are currently being audited by Scorevault researchers.
           </div>
         )}
-      </div>
+      </section>
 
       {/* Top Colleges in City */}
-      <div className="mt-14">
+      <section className="mt-14">
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-2">
             <GraduationCap className="w-5 h-5 text-blue-600" />
@@ -134,8 +146,8 @@ export const CityHubView: React.FC<CityHubViewProps> = ({
             More verified colleges in {cityInfo.name} are currently being audited by Scorevault researchers.
           </div>
         )}
-      </div>
+      </section>
 
-    </div>
+    </article>
   );
 };

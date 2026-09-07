@@ -1,0 +1,815 @@
+// Prisma schema for Scorevault - Data Source Registry & Data Governance Foundation (Neon PostgreSQL)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// --- ENUMS ---
+enum InstitutionType {
+  School
+  College
+  University
+  Standalone_Institute
+}
+
+enum OwnershipType {
+  Private
+  Public
+  Government_Aided
+  Autonomous
+}
+
+enum InstitutionStatus {
+  active
+  inactive
+  merged
+  archived
+}
+
+enum GenderType {
+  co_ed
+  girls_only
+  boys_only
+}
+
+enum InstitutionLevel {
+  primary
+  secondary
+  higher_secondary
+  undergraduate
+  postgraduate
+  doctoral
+  diploma
+}
+
+enum VerificationStatus {
+  unverified
+  pending
+  verified
+  disputed
+}
+
+enum VerificationLevel {
+  none
+  community
+  official_rep
+  government_registry
+}
+
+enum SourceType {
+  government_portal
+  official_website
+  regulatory_council
+  open_data_platform
+  state_admission_cell
+  document
+  community
+}
+
+enum SectorType {
+  school_education
+  higher_education
+  professional_regulatory
+  open_data
+  state_admission
+}
+
+enum SourceStatus {
+  DISCOVERED
+  UNDER_REVIEW
+  VERIFIED
+  READY_FOR_INGESTION
+  BLOCKED
+  RETIRED
+}
+
+enum LicensingStatus {
+  OPEN_LICENSE
+  REUSE_ALLOWED
+  REUSE_RESTRICTED
+  REUSE_STATUS_UNCLEAR
+  PERMISSION_REQUIRED
+  UNKNOWN
+  BLOCKED
+}
+
+enum AccessMethod {
+  API
+  DIRECT_DOWNLOAD
+  SCRAPING
+  MANUAL_IMPORT
+  MANUAL_REVIEW
+}
+
+enum IdentifierType {
+  UDISE_CODE
+  AISHE_CODE
+  UGC_ID
+  AICTE_ID
+  CBSE_ID
+  CISCE_CODE
+  NMC_ID
+  BCI_ID
+  PCI_ID
+  COA_ID
+  NCTE_ID
+  OTHER
+}
+
+enum IngestionStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+  PARTIAL
+  NEEDS_HUMAN_REVIEW
+}
+
+enum UserRole {
+  student
+  parent
+  alumni
+  teacher
+  institution_rep
+  moderator
+  admin
+}
+
+enum ReviewStatus {
+  approved
+  pending
+  flagged
+  rejected
+}
+
+enum ReviewerRelationship {
+  Current_student
+  Former_student
+  Student
+  Parent
+  Alumni
+  Teacher
+  Other
+}
+
+enum ReportReason {
+  harassment
+  defamation
+  spam
+  private_info
+  fake_review
+  other
+}
+
+enum ReportStatus {
+  pending
+  investigating
+  resolved
+  dismissed
+}
+
+enum ClaimStatus {
+  pending
+  approved
+  rejected
+  more_information_required
+}
+
+enum ChangeRequestStatus {
+  pending
+  under_review
+  accepted
+  rejected
+}
+
+// --- GEOGRAPHIC & LOCATION MODELS ---
+model State {
+  id        String     @id @default(uuid())
+  name      String     @unique
+  code      String     @unique
+  districts District[]
+  cities    City[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model District {
+  id        String     @id @default(uuid())
+  name      String
+  stateId   String
+  state     State      @relation(fields: [stateId], references: [id], onDelete: Cascade)
+  locations Location[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@unique([name, stateId])
+  @@index([stateId])
+}
+
+model City {
+  id               String        @id @default(uuid())
+  name             String
+  stateId          String
+  state            State         @relation(fields: [stateId], references: [id], onDelete: Cascade)
+  popular          Boolean       @default(false)
+  tagLine          String?
+  image            String?
+  institutionCount Int           @default(0)
+  schoolCount      Int           @default(0)
+  collegeCount     Int           @default(0)
+  description      String?
+  locations        Location[]
+  institutions     Institution[]
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  @@unique([name, stateId])
+  @@index([name])
+}
+
+model Location {
+  id            String      @id @default(uuid())
+  institutionId String      @unique
+  institution   Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  address       String
+  locality      String
+  cityId        String
+  city          City        @relation(fields: [cityId], references: [id])
+  districtId    String?
+  district      District?   @relation(fields: [districtId], references: [id])
+  stateName     String
+  stateCode     String
+  pincode       String
+  latitude      Float
+  longitude     Float
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([cityId])
+  @@index([pincode])
+  @@index([stateCode])
+}
+
+// --- DATA SOURCE REGISTRY MODEL ---
+model DataSource {
+  id                      String               @id @default(uuid())
+  sourceId                String               @unique
+  organization            String
+  sourceName              String
+  sourceType              SourceType
+  sector                  SectorType
+  geographicCoverage      String               @default("National")
+  institutionTypes        String[]
+  officialUrl             String
+  termsUrl                String?
+  licensingStatus         LicensingStatus      @default(UNKNOWN)
+  licensingEvidenceUrl    String?
+  licensingCheckedDate    DateTime?
+  accessMethod            AccessMethod         @default(MANUAL_REVIEW)
+  apiAvailable            Boolean              @default(false)
+  apiDocumentationUrl     String?
+  downloadAvailable       Boolean              @default(false)
+  downloadFormats         String[]
+  machineReadability      String               @default("High")
+  authenticationRequired  Boolean              @default(false)
+  captchaRequired         Boolean              @default(false)
+  rateLimitingRequired    Boolean              @default(false)
+  updateFrequency         String               @default("Annual")
+  uniqueIdentifiers       String[]
+  estimatedCoverage       String               @default("100,000+ Schools")
+  authorityScore          Float                @default(90.0)
+  coverageScore           Float                @default(80.0)
+  freshnessScore          Float                @default(85.0)
+  machineReadabilityScore Float                @default(75.0)
+  identifierScore         Float                @default(90.0)
+  automationScore         Float                @default(60.0)
+  overallScore            Float                @default(80.0)
+  ingestionPriority       Int                  @default(3)
+  status                  SourceStatus         @default(DISCOVERED)
+  statusReason            String?
+  verifiedBy              String?
+  verifiedAt              DateTime?
+  lastCheckedAt           DateTime             @default(now())
+  notes                   String?
+  sourceRecords           SourceRecord[]
+  dataImports             DataImport[]
+  externalIdentifiers     ExternalIdentifier[]
+  ingestionRuns           IngestionRun[]
+  createdAt               DateTime             @default(now())
+  updatedAt               DateTime             @updatedAt
+
+  @@index([sector])
+  @@index([status])
+  @@index([ingestionPriority])
+}
+
+// --- EXTERNAL IDENTIFIERS MAPPING MODEL ---
+model ExternalIdentifier {
+  id                 String             @id @default(uuid())
+  sourceId           String
+  source             DataSource         @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  identifierType     IdentifierType
+  identifierValue    String
+  institutionId     String
+  institution       Institution        @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  confidence         Float              @default(1.0)
+  verificationStatus VerificationStatus @default(unverified)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  @@unique([identifierType, identifierValue])
+  @@index([institutionId])
+  @@index([sourceId])
+}
+
+// --- INGESTION CONTROL & RUNS MODELS ---
+model DataImport {
+  id            String         @id @default(uuid())
+  sourceId      String
+  source        DataSource     @relation(fields: [sourceId], references: [id])
+  importName    String
+  recordsCount  Int            @default(0)
+  status        String         @default("completed")
+  sourceRecords SourceRecord[]
+  createdAt     DateTime       @default(now())
+}
+
+model IngestionRun {
+  id                 String             @id @default(uuid())
+  sourceId           String
+  source             DataSource         @relation(fields: [sourceId], references: [id])
+  startTime          DateTime           @default(now())
+  endTime            DateTime?
+  recordsDiscovered  Int                @default(0)
+  recordsProcessed   Int                @default(0)
+  recordsAccepted    Int                @default(0)
+  recordsRejected    Int                @default(0)
+  recordsNeedsReview Int                @default(0)
+  errorsCount        Int                @default(0)
+  errorSummary       String?
+  status             IngestionStatus    @default(PENDING)
+  rawRecords         RawRecord[]
+  normalizationRuns  NormalizationRun[]
+  validationRuns     ValidationRun[]
+  createdAt          DateTime           @default(now())
+
+  @@index([sourceId])
+  @@index([status])
+}
+
+model RawRecord {
+  id             String       @id @default(uuid())
+  ingestionRunId String
+  ingestionRun   IngestionRun @relation(fields: [ingestionRunId], references: [id], onDelete: Cascade)
+  externalId     String?
+  payload        Json
+  createdAt      DateTime     @default(now())
+
+  @@index([ingestionRunId])
+}
+
+model NormalizationRun {
+  id             String       @id @default(uuid())
+  ingestionRunId String
+  ingestionRun   IngestionRun @relation(fields: [ingestionRunId], references: [id], onDelete: Cascade)
+  recordsCount   Int          @default(0)
+  status         String       @default("completed")
+  createdAt      DateTime     @default(now())
+}
+
+model ValidationRun {
+  id             String       @id @default(uuid())
+  ingestionRunId String
+  ingestionRun   IngestionRun @relation(fields: [ingestionRunId], references: [id], onDelete: Cascade)
+  passedCount    Int          @default(0)
+  failedCount    Int          @default(0)
+  createdAt      DateTime     @default(now())
+}
+
+model DuplicateCandidate {
+  id              String   @id @default(uuid())
+  institutionIdA  String
+  institutionIdB  String
+  similarityScore Float
+  matchReasons    String[]
+  status          String   @default("pending")
+  createdAt       DateTime @default(now())
+
+  @@index([similarityScore])
+}
+
+model InstitutionIdentifiers {
+  id            String      @id @default(uuid())
+  institutionId String      @unique
+  institution   Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  udiseCode     String?     @unique
+  aisheCode     String?     @unique
+  ugcId         String?     @unique
+  aicteId       String?     @unique
+  cbseId        String?     @unique
+  otherExternal Json?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+// --- CANONICAL INSTITUTION MODEL ---
+model Institution {
+  id                String                    @id @default(uuid()) // Scorevault Permanent Internal ID
+  slug              String                    @unique
+  canonicalName     String
+  displayName       String
+  shortName         String
+  type              InstitutionType
+  category          String
+  cityId            String?
+  city              City?                     @relation(fields: [cityId], references: [id])
+  ownership         OwnershipType
+  establishmentYear Int
+  description       String
+  status            InstitutionStatus         @default(active)
+  officialWebsite   String?
+  officialEmail     String?
+  officialPhone     String?
+  identifiers       InstitutionIdentifiers?
+  externalIds       ExternalIdentifier[]
+  location          Location?
+  educationDetails  InstitutionEducation?
+  facilityDetails   InstitutionFacilities?
+  financialInfo     FinancialInfo?
+  admissionInfo     AdmissionInfo?
+  placementInfo     PlacementInfo?
+  trustInfo         TrustAndVerification?
+  courses           Course[]
+  photos            Photo[]
+  claims            InstitutionClaim[]
+  changeRequests    InstitutionChangeRequest[]
+  reviews           Review[]
+  ratings           Rating[]
+  bookmarks         Bookmark[]
+  comparisons       ComparisonItem[]
+  reports           Report[]
+  sourceRecords     SourceRecord[]
+  isDeleted         Boolean                   @default(false)
+  deletedAt         DateTime?
+  createdAt         DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
+
+  @@index([slug])
+  @@index([type])
+  @@index([ownership])
+  @@index([status])
+}
+
+model InstitutionEducation {
+  id                     String           @id @default(uuid())
+  institutionId         String           @unique
+  institution           Institution      @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  boards                 String[]
+  universityAffiliations String[]
+  streams                String[]
+  medium                 String[]
+  genderType             GenderType       @default(co_ed)
+  institutionLevel       InstitutionLevel @default(higher_secondary)
+  createdAt              DateTime         @default(now())
+  updatedAt              DateTime         @updatedAt
+}
+
+model Program {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  code        String?  @unique
+  description String?
+  courses     Course[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Course {
+  id             String      @id @default(uuid())
+  institutionId  String
+  institution    Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  programId      String?
+  program        Program?    @relation(fields: [programId], references: [id])
+  name           String
+  degree         String
+  duration       String
+  annualFee      String
+  feePerYear     Float
+  seats          Int?
+  seatsAvailable Int?
+  eligibility    String
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@index([institutionId])
+  @@index([name])
+}
+
+model InstitutionFacilities {
+  id            String      @id @default(uuid())
+  institutionId String      @unique
+  institution   Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  hostel        Boolean     @default(false)
+  transport     Boolean     @default(false)
+  library       Boolean     @default(false)
+  laboratory    Boolean     @default(false)
+  sports        Boolean     @default(false)
+  cafeteria     Boolean     @default(false)
+  internet      Boolean     @default(false)
+  accessibility Boolean     @default(false)
+  otherList     String[]
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+model FinancialInfo {
+  id              String      @id @default(uuid())
+  institutionId   String      @unique
+  institution     Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  tuitionFeeMin   Float
+  tuitionFeeMax   Float
+  admissionFee    Float?
+  hostelFee       Float?
+  otherFees       Float?
+  feePeriod       String      @default("annual")
+  feeSource       String?
+  feeLastVerified DateTime?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+}
+
+model AdmissionInfo {
+  id               String      @id @default(uuid())
+  institutionId    String      @unique
+  institution      Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  admissionProcess String
+  eligibility      String
+  entranceExams    String[]
+  admissionUrl     String?
+  admissionCycle   String?
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+}
+
+model PlacementInfo {
+  id                 String      @id @default(uuid())
+  institutionId      String      @unique
+  institution        Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  placementAvailable Boolean     @default(true)
+  placementRate      Float?
+  medianSalary       Float?
+  highestSalary      Float?
+  averageSalary      Float?
+  placementSource    String?
+  placementYear      Int?
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+}
+
+model TrustAndVerification {
+  id                    String             @id @default(uuid())
+  institutionId        String             @unique
+  institution          Institution        @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  verificationStatus    VerificationStatus @default(unverified)
+  verificationLevel     VerificationLevel  @default(none)
+  lastVerifiedAt        DateTime?
+  dataCompletenessScore Float              @default(0.0)
+  dataFreshnessScore    Float              @default(0.0)
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+}
+
+model SourceRecord {
+  id                 String             @id @default(uuid())
+  institutionId     String?
+  institution       Institution?       @relation(fields: [institutionId], references: [id], onDelete: SetNull)
+  sourceId          String
+  source            DataSource         @relation(fields: [sourceId], references: [id])
+  importId          String?
+  importJob         DataImport?        @relation(fields: [importId], references: [id])
+  sourceUrl         String
+  collectionDate    DateTime           @default(now())
+  lastCheckedDate   DateTime           @default(now())
+  rawValue          Json
+  normalizedValue   Json
+  confidenceScore   Float              @default(1.0)
+  verificationStatus VerificationStatus @default(unverified)
+  createdAt         DateTime           @default(now())
+
+  @@index([institutionId])
+  @@index([sourceId])
+}
+
+model DataChangeHistory {
+  id         String   @id @default(uuid())
+  targetType String
+  targetId   String
+  fieldName  String
+  oldValue   String?
+  newValue   String?
+  changedBy  String
+  reason     String?
+  createdAt  DateTime @default(now())
+
+  @@index([targetType, targetId])
+}
+
+// --- COMMUNITY DATA MODELS ---
+model User {
+  id             String                     @id @default(uuid())
+  name           String
+  email          String                     @unique
+  passwordHash   String?
+  phone          String?
+  avatar         String?
+  role           UserRole                   @default(student)
+  cityName       String?
+  isVerified     Boolean                    @default(false)
+  isSuspended    Boolean                    @default(false)
+  joinedDate     DateTime                   @default(now())
+  reviews        Review[]
+  bookmarks      Bookmark[]
+  reports        Report[]                   @relation("UserReports")
+  claims         InstitutionClaim[]
+  changeRequests InstitutionChangeRequest[]
+  auditLogs      AuditLog[]                 @relation("AdminAuditLogs")
+  helpfulVotes   HelpfulVote[]
+  isDeleted      Boolean                    @default(false)
+  deletedAt      DateTime?
+  createdAt      DateTime                   @default(now())
+  updatedAt      DateTime                   @updatedAt
+
+  @@index([email])
+}
+
+model Photo {
+  id            String      @id @default(uuid())
+  institutionId String
+  institution   Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  url           String
+  caption       String?
+  isHero        Boolean     @default(false)
+  createdAt     DateTime    @default(now())
+
+  @@index([institutionId])
+}
+
+model Review {
+  id                     String               @id @default(uuid())
+  institutionId          String
+  institution            Institution          @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  userId                 String
+  user                   User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reviewerType           ReviewerRelationship
+  isVerifiedReviewer     Boolean              @default(false)
+  rating                 Float
+  title                  String
+  content                String
+  pros                   String[]
+  cons                   String[]
+  photos                 String[]
+  helpfulCount           Int                  @default(0)
+  reported               Boolean              @default(false)
+  reportCount            Int                  @default(0)
+  status                 ReviewStatus         @default(approved)
+  courseOrGrade          String?
+  yearOfPassingOrCurrent Int?
+  reports                Report[]
+  ratings                Rating[]
+  votes                  HelpfulVote[]
+  isDeleted              Boolean              @default(false)
+  deletedAt              DateTime?
+  createdAt              DateTime             @default(now())
+  updatedAt              DateTime             @updatedAt
+
+  @@index([institutionId])
+  @@index([userId])
+  @@index([status])
+}
+
+model Rating {
+  id            String      @id @default(uuid())
+  institutionId String
+  institution   Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  reviewId      String?
+  review        Review?     @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  categoryName  String
+  score         Float
+  createdAt     DateTime    @default(now())
+
+  @@index([institutionId])
+  @@index([reviewId])
+}
+
+model HelpfulVote {
+  id        String   @id @default(uuid())
+  reviewId  String
+  review    Review   @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([reviewId, userId])
+}
+
+model Bookmark {
+  id            String      @id @default(uuid())
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  institutionId String
+  institution   Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  createdAt     DateTime    @default(now())
+
+  @@unique([userId, institutionId])
+  @@index([userId])
+}
+
+model ComparisonSession {
+  id        String           @id @default(uuid())
+  sessionId String           @unique
+  items     ComparisonItem[]
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+}
+
+model ComparisonItem {
+  id                  String            @id @default(uuid())
+  comparisonSessionId String
+  comparisonSession   ComparisonSession @relation(fields: [comparisonSessionId], references: [id], onDelete: Cascade)
+  institutionId       String
+  institution         Institution       @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  createdAt           DateTime          @default(now())
+
+  @@unique([comparisonSessionId, institutionId])
+}
+
+model Report {
+  id            String       @id @default(uuid())
+  reviewId      String
+  review        Review       @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  institutionId String
+  institution   Institution  @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User         @relation("UserReports", fields: [userId], references: [id])
+  reason        ReportReason
+  notes         String?
+  status        ReportStatus @default(pending)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([reviewId])
+  @@index([institutionId])
+}
+
+model InstitutionClaim {
+  id            String      @id @default(uuid())
+  institutionId String
+  institution   Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  officialEmail String
+  designation   String
+  documentUrl   String?
+  status        ClaimStatus @default(pending)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([institutionId])
+  @@index([userId])
+}
+
+model InstitutionChangeRequest {
+  id            String              @id @default(uuid())
+  institutionId String
+  institution   Institution         @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  requestedById String
+  requestedBy   User                @relation(fields: [requestedById], references: [id], onDelete: Cascade)
+  fieldName     String
+  proposedValue String
+  evidenceUrl   String?
+  status        ChangeRequestStatus @default(pending)
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  @@index([institutionId])
+  @@index([requestedById])
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  action     String
+  adminId    String
+  admin      User     @relation("AdminAuditLogs", fields: [adminId], references: [id], onDelete: Cascade)
+  targetType String
+  targetId   String
+  details    String?
+  createdAt  DateTime @default(now())
+
+  @@index([adminId])
+  @@index([targetType])
+}

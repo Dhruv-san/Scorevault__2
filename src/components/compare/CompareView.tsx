@@ -4,16 +4,11 @@ import {
   X, 
   Plus, 
   Sparkles, 
-  Check, 
   ArrowLeft, 
-  Award, 
-  ShieldCheck, 
-  Building2, 
-  HelpCircle 
+  Award
 } from 'lucide-react';
 import { Institution } from '../../types';
 import { dataService } from '../../services/dataService';
-import { StarRating } from '../common/StarRating';
 import { askScorevaultAdvisor } from '../../services/aiService';
 
 interface CompareViewProps {
@@ -92,7 +87,7 @@ Give an objective, transparent verdict without diplomatic hedging.`,
         <div>
           <button
             onClick={onBack}
-            className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-950 mb-2 transition-colors"
+            className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-950 mb-2 transition-colors min-h-[44px]"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Back</span>
@@ -114,7 +109,7 @@ Give an objective, transparent verdict without diplomatic hedging.`,
           <button
             onClick={handleRunAiThinkingCompare}
             disabled={aiLoading}
-            className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white text-xs font-bold rounded-xl shadow-xs hover:opacity-95 transition-all self-start sm:self-auto shrink-0"
+            className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white text-xs font-bold rounded-xl shadow-xs hover:opacity-95 transition-all self-start sm:self-auto shrink-0 min-h-[44px]"
           >
             <Sparkles className={`w-4 h-4 ${aiLoading ? 'animate-spin' : ''}`} />
             <span>{aiLoading ? 'Analyzing Tradeoffs (Deep Thinking)...' : 'AI Deep Decision Analysis'}</span>
@@ -152,7 +147,7 @@ Give an objective, transparent verdict without diplomatic hedging.`,
           </p>
           <button
             onClick={onOpenSearch}
-            className="px-5 py-2.5 bg-blue-600 text-white text-xs font-bold rounded-xl hover:bg-blue-700 shadow-xs"
+            className="px-5 py-2.5 bg-blue-600 text-white text-xs font-bold rounded-xl hover:bg-blue-700 shadow-xs min-h-[44px]"
           >
             Browse Institutions to Compare
           </button>
@@ -160,25 +155,31 @@ Give an objective, transparent verdict without diplomatic hedging.`,
       ) : (
         /* Comparison Matrix Table */
         <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+          {/* Mobile Swipe Hint */}
+          <div className="sm:hidden px-4 py-2 bg-blue-50 text-blue-700 text-[11px] font-bold border-b border-blue-100 flex items-center justify-between">
+            <span>← Swipe horizontally to compare →</span>
+            <span>{institutions.length} Selected</span>
+          </div>
+
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+            <table className="w-full text-left border-collapse min-w-[600px]">
               <thead>
                 <tr className="border-b border-slate-200 bg-slate-50/60">
-                  <th className="p-4 sm:p-5 w-48 text-xs font-bold uppercase tracking-wider text-slate-400 bg-slate-50/80">
+                  <th className="p-4 sm:p-5 w-48 text-xs font-bold uppercase tracking-wider text-slate-400 bg-slate-50/80 sticky left-0 z-10">
                     Feature / Metric
                   </th>
                   {institutions.map(inst => (
-                    <th key={inst.id} className="p-4 sm:p-5 min-w-[220px] max-w-[260px] align-top">
+                    <th key={inst.id} className="p-4 sm:p-5 min-w-[200px] max-w-[260px] align-top">
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-slate-200/80 text-slate-700">
                           {inst.type}
                         </span>
                         <button
                           onClick={() => handleRemove(inst.id)}
-                          className="p-1 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-200/60"
+                          className="p-1.5 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-200/60 min-h-[36px] min-w-[36px] flex items-center justify-center"
                           title="Remove from comparison"
                         >
-                          <X className="w-3.5 h-3.5" />
+                          <X className="w-4 h-4" />
                         </button>
                       </div>
 
@@ -201,7 +202,7 @@ Give an objective, transparent verdict without diplomatic hedging.`,
                     <th className="p-4 sm:p-5 min-w-[180px] align-middle text-center border-l border-dashed border-slate-200">
                       <button
                         onClick={() => setSelectorOpen(true)}
-                        className="flex flex-col items-center justify-center w-full py-6 border-2 border-dashed border-slate-300 hover:border-blue-400 rounded-xl hover:bg-blue-50/40 transition-colors group"
+                        className="flex flex-col items-center justify-center w-full py-6 border-2 border-dashed border-slate-300 hover:border-blue-400 rounded-xl hover:bg-blue-50/40 transition-colors group min-h-[100px]"
                       >
                         <Plus className="w-5 h-5 text-slate-400 group-hover:text-blue-600 mb-1" />
                         <span className="text-xs font-bold text-slate-600 group-hover:text-blue-600">
@@ -216,7 +217,7 @@ Give an objective, transparent verdict without diplomatic hedging.`,
               <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
                 {/* Row: Scorevault Rating */}
                 <tr>
-                  <td className="p-4 sm:p-5 font-bold text-slate-900 bg-slate-50/50">Overall Rating</td>
+                  <td className="p-4 sm:p-5 font-bold text-slate-900 bg-slate-50/50 sticky left-0 z-10">Overall Rating</td>
                   {institutions.map(inst => (
                     <td key={inst.id} className="p-4 sm:p-5">
                       <div className="flex items-center gap-1.5">
@@ -231,7 +232,7 @@ Give an objective, transparent verdict without diplomatic hedging.`,
 
                 {/* Row: NIRF / Ranking */}
                 <tr>
-                  <td className="p-4 sm:p-5 font-bold text-slate-900 bg-slate-50/50">National Rank</td>
+                  <td className="p-4 sm:p-5 font-bold text-slate-900 bg-slate-50/50 sticky left-0 z-10">National Rank</td>
                   {institutions.map(inst => (
                     <td key={inst.id} className="p-4 sm:p-5 font-semibold">
                       {inst.nirfRank ? (
@@ -249,7 +250,7 @@ Give an objective, transparent verdict without diplomatic hedging.`,
 
                 {/* Row: Annual Fee Range */}
                 <tr>
-                  <td className="p-4 sm:p-5 font-bold text-slate-900 bg-slate-50/50">Estimated Tuition</td>
+                  <td className="p-4 sm:p-5 font-bold text-slate-900 bg-slate-50/50 sticky left-0 z-10">Estimated Tuition</td>
                   {institutions.map(inst => (
                     <td key={inst.id} className="p-4 sm:p-5 font-bold text-emerald-700">
                       {inst.feeRange.displayText}
@@ -260,7 +261,7 @@ Give an objective, transparent verdict without diplomatic hedging.`,
 
                 {/* Row: Placements / Faculty Ratio */}
                 <tr>
-                  <td className="p-4 sm:p-5 font-bold text-slate-900 bg-slate-50/50">
+                  <td className="p-4 sm:p-5 font-bold text-slate-900 bg-slate-50/50 sticky left-0 z-10">
                     Placements / Ratio
                   </td>
                   {institutions.map(inst => (
@@ -275,7 +276,7 @@ Give an objective, transparent verdict without diplomatic hedging.`,
 
                 {/* Row: Board / University */}
                 <tr>
-                  <td className="p-4 sm:p-5 font-bold text-slate-900 bg-slate-50/50">Board / University</td>
+                  <td className="p-4 sm:p-5 font-bold text-slate-900 bg-slate-50/50 sticky left-0 z-10">Board / University</td>
                   {institutions.map(inst => (
                     <td key={inst.id} className="p-4 sm:p-5 font-medium">
                       {inst.boardOrUniversity}
@@ -286,7 +287,7 @@ Give an objective, transparent verdict without diplomatic hedging.`,
 
                 {/* Row: Ownership */}
                 <tr>
-                  <td className="p-4 sm:p-5 font-bold text-slate-900 bg-slate-50/50">Ownership Model</td>
+                  <td className="p-4 sm:p-5 font-bold text-slate-900 bg-slate-50/50 sticky left-0 z-10">Ownership Model</td>
                   {institutions.map(inst => (
                     <td key={inst.id} className="p-4 sm:p-5 font-medium">
                       {inst.ownership}
@@ -297,7 +298,7 @@ Give an objective, transparent verdict without diplomatic hedging.`,
 
                 {/* Row: Campus Size */}
                 <tr>
-                  <td className="p-4 sm:p-5 font-bold text-slate-900 bg-slate-50/50">Campus Acreage</td>
+                  <td className="p-4 sm:p-5 font-bold text-slate-900 bg-slate-50/50 sticky left-0 z-10">Campus Acreage</td>
                   {institutions.map(inst => (
                     <td key={inst.id} className="p-4 sm:p-5">
                       {inst.campusSize}
@@ -308,7 +309,7 @@ Give an objective, transparent verdict without diplomatic hedging.`,
 
                 {/* Row: Hostel */}
                 <tr>
-                  <td className="p-4 sm:p-5 font-bold text-slate-900 bg-slate-50/50">Hostel Facility</td>
+                  <td className="p-4 sm:p-5 font-bold text-slate-900 bg-slate-50/50 sticky left-0 z-10">Hostel Facility</td>
                   {institutions.map(inst => (
                     <td key={inst.id} className="p-4 sm:p-5 font-medium">
                       {inst.hostelAvailable ? '✓ On-campus Hostels' : '✕ Day Scholars'}
@@ -317,36 +318,14 @@ Give an objective, transparent verdict without diplomatic hedging.`,
                   {institutions.length < 4 && <td />}
                 </tr>
 
-                {/* Row: Category Breakdown - Academics */}
-                <tr>
-                  <td className="p-4 sm:p-5 font-bold text-slate-900 bg-slate-50/50">Academics Score</td>
-                  {institutions.map(inst => (
-                    <td key={inst.id} className="p-4 sm:p-5 font-bold text-blue-600">
-                      {(inst.categoryRatings?.academics || inst.rating).toFixed(1)} / 5.0
-                    </td>
-                  ))}
-                  {institutions.length < 4 && <td />}
-                </tr>
-
-                {/* Row: Category Breakdown - Infrastructure */}
-                <tr>
-                  <td className="p-4 sm:p-5 font-bold text-slate-900 bg-slate-50/50">Infrastructure Score</td>
-                  {institutions.map(inst => (
-                    <td key={inst.id} className="p-4 sm:p-5 font-bold text-blue-600">
-                      {(inst.categoryRatings?.infrastructure || inst.rating).toFixed(1)} / 5.0
-                    </td>
-                  ))}
-                  {institutions.length < 4 && <td />}
-                </tr>
-
                 {/* Row: Action view profile */}
                 <tr>
-                  <td className="p-4 sm:p-5 bg-slate-50/50" />
+                  <td className="p-4 sm:p-5 bg-slate-50/50 sticky left-0 z-10" />
                   {institutions.map(inst => (
                     <td key={inst.id} className="p-4 sm:p-5">
                       <button
                         onClick={() => onSelectInstitution(inst)}
-                        className="w-full py-2 bg-slate-900 hover:bg-blue-600 text-white font-bold rounded-lg text-xs transition-colors"
+                        className="w-full py-2.5 bg-slate-900 hover:bg-blue-600 text-white font-bold rounded-xl text-xs transition-colors min-h-[44px]"
                       >
                         View Profile
                       </button>
@@ -368,7 +347,7 @@ Give an objective, transparent verdict without diplomatic hedging.`,
               <h3 className="text-base font-bold text-slate-900 font-display">
                 Select Institution to Compare
               </h3>
-              <button onClick={() => setSelectorOpen(false)}>
+              <button onClick={() => setSelectorOpen(false)} className="p-2 min-h-[44px] min-w-[44px]">
                 <X className="w-5 h-5 text-slate-400 hover:text-slate-700" />
               </button>
             </div>
@@ -380,7 +359,7 @@ Give an objective, transparent verdict without diplomatic hedging.`,
                   <div
                     key={inst.id}
                     onClick={() => handleAddInstitution(inst.id)}
-                    className="flex items-center justify-between p-3 rounded-xl border border-slate-200 hover:border-blue-400 hover:bg-blue-50/40 cursor-pointer transition-all"
+                    className="flex items-center justify-between p-3 rounded-xl border border-slate-200 hover:border-blue-400 hover:bg-blue-50/40 cursor-pointer transition-all min-h-[44px]"
                   >
                     <div>
                       <h4 className="text-xs font-bold text-slate-900">{inst.name}</h4>
