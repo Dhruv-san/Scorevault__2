@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'motion/react';
 import { Compass, Search, Scale, Bookmark, Sparkles } from 'lucide-react';
 import { dataService } from '../../services/dataService';
 
@@ -19,73 +20,90 @@ export const MobileNav: React.FC<MobileNavProps> = ({
   const savedCount = dataService.getSavedInstitutions().length;
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-lg border-t border-slate-200/80 px-2 py-1.5 shadow-lg">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-t border-slate-200/90 px-2 py-2 pb-safe shadow-2xl">
       <div className="grid grid-cols-5 items-center justify-items-center">
         
         {/* Explore */}
-        <button
+        <motion.button
+          whileTap={{ scale: 0.92 }}
           onClick={() => onNavigate('home')}
-          className={`flex flex-col items-center justify-center w-full py-1 text-[10px] font-medium transition-colors ${
-            currentView === 'home' ? 'text-blue-600 font-semibold' : 'text-slate-500 hover:text-slate-900'
+          className={`flex flex-col items-center justify-center w-full min-h-[44px] py-1 text-[11px] font-bold transition-colors ${
+            currentView === 'home' ? 'text-blue-600 font-extrabold' : 'text-slate-500 hover:text-slate-900'
           }`}
         >
           <Compass className="w-5 h-5 mb-0.5" />
           <span>Explore</span>
-        </button>
+          {currentView === 'home' && (
+            <motion.div layoutId="mobile-nav-indicator" className="w-1.5 h-1.5 rounded-full bg-blue-600 mt-0.5" />
+          )}
+        </motion.button>
 
         {/* Search */}
-        <button
+        <motion.button
+          whileTap={{ scale: 0.92 }}
           onClick={onOpenSearch}
-          className={`flex flex-col items-center justify-center w-full py-1 text-[10px] font-medium transition-colors ${
-            currentView === 'search' ? 'text-blue-600 font-semibold' : 'text-slate-500 hover:text-slate-900'
+          className={`flex flex-col items-center justify-center w-full min-h-[44px] py-1 text-[11px] font-bold transition-colors ${
+            currentView === 'search' ? 'text-blue-600 font-extrabold' : 'text-slate-500 hover:text-slate-900'
           }`}
         >
           <Search className="w-5 h-5 mb-0.5" />
           <span>Search</span>
-        </button>
+          {currentView === 'search' && (
+            <motion.div layoutId="mobile-nav-indicator" className="w-1.5 h-1.5 rounded-full bg-blue-600 mt-0.5" />
+          )}
+        </motion.button>
 
-        {/* AI Counselor in center with subtle highlight */}
-        <button
+        {/* AI Counselor Center Floating Trigger */}
+        <motion.button
+          whileTap={{ scale: 0.92 }}
           onClick={onOpenAdvisor}
-          className="flex flex-col items-center justify-center w-full py-1 text-[10px] font-medium text-slate-800"
+          className="flex flex-col items-center justify-center w-full min-h-[44px] py-1 text-[11px] font-bold text-slate-900"
         >
-          <div className="w-8 h-8 -mt-3 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-md shadow-blue-500/20">
+          <div className="w-9 h-9 -mt-4 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-500/30 ring-4 ring-white">
             <Sparkles className="w-4 h-4 text-white" />
           </div>
-          <span className="mt-0.5 text-blue-600 font-bold">Advisor</span>
-        </button>
+          <span className="mt-0.5 text-blue-600 font-black">Advisor</span>
+        </motion.button>
 
         {/* Compare */}
-        <button
+        <motion.button
+          whileTap={{ scale: 0.92 }}
           onClick={() => onNavigate('compare')}
-          className={`relative flex flex-col items-center justify-center w-full py-1 text-[10px] font-medium transition-colors ${
-            currentView === 'compare' ? 'text-blue-600 font-semibold' : 'text-slate-500 hover:text-slate-900'
+          className={`relative flex flex-col items-center justify-center w-full min-h-[44px] py-1 text-[11px] font-bold transition-colors ${
+            currentView === 'compare' ? 'text-blue-600 font-extrabold' : 'text-slate-500 hover:text-slate-900'
           }`}
         >
           <Scale className="w-5 h-5 mb-0.5" />
           <span>Compare</span>
           {compareCount > 0 && (
-            <span className="absolute top-0.5 right-3 w-4 h-4 rounded-full bg-blue-600 text-white text-[9px] font-bold flex items-center justify-center">
+            <span className="absolute top-0 right-3.5 w-4 h-4 rounded-full bg-blue-600 text-white text-[9px] font-black flex items-center justify-center">
               {compareCount}
             </span>
           )}
-        </button>
+          {currentView === 'compare' && (
+            <motion.div layoutId="mobile-nav-indicator" className="w-1.5 h-1.5 rounded-full bg-blue-600 mt-0.5" />
+          )}
+        </motion.button>
 
         {/* Saved */}
-        <button
+        <motion.button
+          whileTap={{ scale: 0.92 }}
           onClick={() => onNavigate('saved')}
-          className={`relative flex flex-col items-center justify-center w-full py-1 text-[10px] font-medium transition-colors ${
-            currentView === 'saved' ? 'text-blue-600 font-semibold' : 'text-slate-500 hover:text-slate-900'
+          className={`relative flex flex-col items-center justify-center w-full min-h-[44px] py-1 text-[11px] font-bold transition-colors ${
+            currentView === 'saved' ? 'text-blue-600 font-extrabold' : 'text-slate-500 hover:text-slate-900'
           }`}
         >
           <Bookmark className="w-5 h-5 mb-0.5" />
           <span>Saved</span>
           {savedCount > 0 && (
-            <span className="absolute top-0.5 right-3 w-4 h-4 rounded-full bg-blue-600 text-white text-[9px] font-bold flex items-center justify-center">
+            <span className="absolute top-0 right-3.5 w-4 h-4 rounded-full bg-blue-600 text-white text-[9px] font-black flex items-center justify-center">
               {savedCount}
             </span>
           )}
-        </button>
+          {currentView === 'saved' && (
+            <motion.div layoutId="mobile-nav-indicator" className="w-1.5 h-1.5 rounded-full bg-blue-600 mt-0.5" />
+          )}
+        </motion.button>
 
       </div>
     </nav>
