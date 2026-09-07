@@ -14,10 +14,12 @@ import { CityHubView } from './components/city/CityHubView';
 import { CategoryHubView } from './components/category/CategoryHubView';
 import { AdminDashboardView } from './components/admin/AdminDashboardView';
 import { AIAdvisorModal } from './components/advisor/AIAdvisorModal';
+import { LoadingSplash } from './components/common/LoadingSplash';
 import { dataService } from './services/dataService';
 import { Institution, SearchFilterParams } from './types';
 
 export default function App() {
+  const [initialLoading, setInitialLoading] = useState(true);
   const [currentView, setCurrentView] = useState<string>('home');
   const [selectedInstitution, setSelectedInstitution] = useState<Institution | null>(null);
   const [searchParams, setSearchParams] = useState<SearchFilterParams>({});
@@ -26,6 +28,14 @@ export default function App() {
 
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [advisorModalOpen, setAdvisorModalOpen] = useState(false);
+
+  // Initial Loading Splash timer
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setInitialLoading(false);
+    }, 800);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Keyboard shortcut: Cmd+K or Ctrl+K triggers search view
   useEffect(() => {
@@ -83,6 +93,10 @@ export default function App() {
   };
 
   const trendingInstitutions = dataService.getTrendingInstitutions();
+
+  if (initialLoading) {
+    return <LoadingSplash message="Syncing with Neon DB & Scorevault Registries..." />;
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-white text-slate-900 selection:bg-blue-100 selection:text-blue-900">
