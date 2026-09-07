@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { motion } from 'motion/react';
-import { Search, MapPin, ArrowRight, Building, GraduationCap, School, BookOpen, Stethoscope, Briefcase, Landmark, Sparkles } from 'lucide-react';
+import { Search, MapPin, ArrowRight, Building, GraduationCap, School, BookOpen, Stethoscope, Briefcase, Landmark } from 'lucide-react';
 import { CITIES_DATA } from '../../data/seedData';
 
 interface HeroSectionProps {
@@ -36,177 +35,113 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (query.trim()) {
-      onSearchSubmit(query.trim());
-    } else {
-      onSearchSubmit('');
-    }
-  };
-
-  const handleExampleClick = (example: string) => {
-    setQuery(example);
-    onSearchSubmit(example);
+    onSearchSubmit(query.trim());
   };
 
   return (
-    <section className="relative pt-12 pb-16 sm:pt-20 sm:pb-24 bg-white text-slate-900 overflow-hidden border-b border-slate-200/80">
-
-      {/* Moving Animated Vector Graphics Elements (White Theme Canvas) */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        {/* Floating Animated Geometric Blobs */}
-        <motion.div
-          animate={{
-            x: [0, 40, -20, 0],
-            y: [0, -30, 20, 0],
-            scale: [1, 1.1, 0.9, 1]
-          }}
-          transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
-          className="absolute -top-10 -left-10 w-96 h-96 bg-blue-100/60 rounded-full blur-3xl opacity-70"
-        />
-        <motion.div
-          animate={{
-            x: [0, -50, 30, 0],
-            y: [0, 40, -30, 0],
-            scale: [1, 0.9, 1.1, 1]
-          }}
-          transition={{ duration: 15, repeat: Infinity, ease: 'easeInOut' }}
-          className="absolute top-1/3 right-0 w-96 h-96 bg-indigo-100/60 rounded-full blur-3xl opacity-60"
-        />
-
-        {/* Subtle SVG Grid Motion Graphic */}
-        <div className="absolute inset-0 opacity-15 bg-[radial-gradient(#3b82f6_1.5px,transparent_1.5px)] [background-size:24px_24px]" />
-      </div>
-
-      <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+    <section className="bg-white text-slate-900 border-b border-slate-200/80 py-8 sm:py-16">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         
-        {/* Neutrality Trust Tag */}
-        <motion.div
-          initial={{ opacity: 0, y: -12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-50 border border-blue-200/80 text-blue-700 text-xs font-bold mb-6 shadow-2xs"
-        >
-          <Sparkles className="w-3.5 h-3.5 text-blue-600 animate-spin" />
-          <span>India’s Authentic Education Intelligence Platform</span>
-        </motion.div>
+        {/* Simple Trust Pill */}
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-semibold mb-4 border border-slate-200">
+          <span className="w-2 h-2 rounded-full bg-blue-600" />
+          <span>India’s Education Intelligence Directory</span>
+        </div>
 
-        {/* Hero Title & Subtitle with Enhanced Typography */}
-        <motion.h1
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.1 }}
-          className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight text-slate-950 font-display max-w-4xl mx-auto leading-[1.1]"
-        >
-          Know <span className="text-blue-600 underline decoration-blue-200 decoration-wavy underline-offset-8">Before</span> You Choose.
-        </motion.h1>
+        {/* Clean Title */}
+        <h1 className="text-3xl sm:text-5xl font-extrabold text-slate-950 font-display tracking-tight leading-tight">
+          Find the Right School or College in India
+        </h1>
+        <p className="mt-3 text-sm sm:text-lg text-slate-600 max-w-2xl mx-auto leading-relaxed font-normal">
+          Authentic student reviews, verified fee structures, government cutoffs, and side-by-side comparisons.
+        </p>
 
-        <motion.p
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          className="mt-4 sm:mt-6 text-base sm:text-xl text-slate-600 font-normal max-w-2xl mx-auto leading-relaxed"
-        >
-          Verified Indian school & college reviews, government cutoff data, and real-time AI counseling.
-        </motion.p>
-
-        {/* Smart Search Bar on White Theme */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.96 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-          className="mt-8 sm:mt-10 max-w-3xl mx-auto"
-        >
+        {/* Product-Focused Search Bar */}
+        <div className="mt-6 sm:mt-8 max-w-2xl mx-auto">
           <form 
             onSubmit={handleSubmit}
-            className="relative flex items-center bg-white border-2 border-slate-200/90 focus-within:border-blue-600 rounded-2xl p-2 sm:p-2.5 shadow-xl shadow-slate-200/40 transition-all hover:shadow-2xl"
+            className="flex flex-col sm:flex-row items-stretch bg-white border border-slate-300 focus-within:border-blue-600 rounded-2xl p-1.5 shadow-sm transition-all gap-2"
           >
-            <div className="pl-3 pr-2 text-slate-400">
-              <Search className="w-5 h-5 sm:w-6 sm:h-6 text-slate-400" />
+            <div className="flex items-center flex-1 px-3 py-2 sm:py-0">
+              <Search className="w-5 h-5 text-slate-400 shrink-0 mr-2" />
+              <input
+                type="text"
+                value={query}
+                onChange={e => setQuery(e.target.value)}
+                placeholder="Search by school, college, course, city, or pincode..."
+                className="w-full bg-transparent text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none font-medium min-h-[38px]"
+              />
             </div>
-            
-            <input
-              type="text"
-              id="hero-search-input"
-              value={query}
-              onChange={e => setQuery(e.target.value)}
-              placeholder="Search schools, colleges, courses or locations..."
-              className="w-full bg-transparent text-sm sm:text-base text-slate-900 placeholder:text-slate-400 focus:outline-none pr-3 font-medium"
-            />
 
             <button
               type="submit"
-              id="hero-search-submit-btn"
-              className="px-6 sm:px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs sm:text-sm rounded-xl transition-all shrink-0 shadow-md hover:shadow-blue-500/25 flex items-center gap-2 hover:scale-[1.02]"
+              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs sm:text-sm rounded-xl transition-colors shadow-xs flex items-center justify-center gap-2 min-h-[44px]"
             >
-              <span>Explore</span>
-              <ArrowRight className="w-4 h-4 hidden sm:inline" />
+              <span>Search Directory</span>
+              <ArrowRight className="w-4 h-4" />
             </button>
           </form>
 
-          {/* Search Examples */}
-          <div className="mt-3.5 flex items-center justify-center gap-1.5 sm:gap-2 flex-wrap text-xs text-slate-500">
-            <span className="font-semibold text-slate-700">Try searching:</span>
+          {/* Quick Search Chips */}
+          <div className="mt-3 flex items-center justify-center gap-1.5 flex-wrap text-xs text-slate-500">
+            <span className="font-semibold text-slate-700">Popular:</span>
             {searchExamples.map((ex, idx) => (
               <button
                 key={idx}
                 type="button"
-                onClick={() => handleExampleClick(ex)}
-                className="text-slate-600 hover:text-blue-600 bg-slate-100 hover:bg-blue-50 px-2.5 py-1 rounded-lg transition-colors border border-slate-200/60 font-medium"
+                onClick={() => { setQuery(ex); onSearchSubmit(ex); }}
+                className="text-slate-600 hover:text-blue-600 bg-slate-100 hover:bg-blue-50 px-2.5 py-1 rounded-md transition-colors border border-slate-200/60 font-medium text-[11px] min-h-[32px]"
               >
                 {ex}
               </button>
             ))}
           </div>
-        </motion.div>
+        </div>
 
-        {/* Popular Categories */}
-        <div className="mt-12 pt-8 border-t border-slate-200/70">
-          <div className="flex items-center justify-between mb-4">
+        {/* Categories */}
+        <div className="mt-10 pt-6 border-t border-slate-100">
+          <div className="flex items-center justify-between mb-3 text-left">
             <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500 font-display">
-              Popular Categories
+              Browse Categories
             </h2>
             <button 
               onClick={() => onSelectCategory('Schools')}
-              className="text-xs font-bold text-blue-600 hover:text-blue-800 transition-colors"
+              className="text-xs font-bold text-blue-600 hover:text-blue-800"
             >
-              View All Categories →
+              All Categories →
             </button>
           </div>
 
-          <div className="flex items-center justify-center gap-2 sm:gap-3 flex-wrap">
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 sm:gap-3">
             {categories.map(cat => (
               <button
                 key={cat.value}
-                id={`hero-category-${cat.value.toLowerCase()}`}
                 onClick={() => onSelectCategory(cat.value)}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-slate-200/90 hover:border-blue-400 hover:bg-blue-50/50 text-xs sm:text-sm font-bold text-slate-800 transition-all shadow-xs hover:shadow-md hover:-translate-y-0.5 group"
+                className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-50 hover:bg-blue-50 border border-slate-200/80 text-xs font-bold text-slate-800 transition-colors text-left min-h-[44px]"
               >
-                <span className="text-slate-400 group-hover:text-blue-600 transition-colors">
-                  {cat.icon}
-                </span>
-                <span>{cat.label}</span>
+                <span className="text-slate-500 shrink-0">{cat.icon}</span>
+                <span className="truncate">{cat.label}</span>
               </button>
             ))}
           </div>
         </div>
 
-        {/* Popular Cities */}
-        <div className="mt-8">
-          <div className="flex items-center justify-between mb-4">
+        {/* Cities */}
+        <div className="mt-6">
+          <div className="flex items-center justify-between mb-3 text-left">
             <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500 font-display">
-              Popular Educational Hubs
+              Major Educational Hubs
             </h2>
           </div>
 
-          <div className="flex items-center justify-center gap-2 sm:gap-2.5 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap">
             {CITIES_DATA.map(city => (
               <button
                 key={city.id}
-                id={`hero-city-${city.id}`}
                 onClick={() => onSelectCity(city.name)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-xs font-semibold text-slate-700 hover:text-slate-950 transition-all hover:scale-105"
+                className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-xs font-semibold text-slate-700 transition-colors min-h-[36px]"
               >
-                <MapPin className="w-3 h-3 text-blue-600" />
+                <MapPin className="w-3 h-3 text-blue-600 shrink-0" />
                 <span>{city.name}</span>
                 <span className="text-[10px] text-slate-400 font-normal">({city.institutionCount})</span>
               </button>
