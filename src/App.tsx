@@ -85,9 +85,9 @@ export default function App() {
   const trendingInstitutions = dataService.getTrendingInstitutions();
 
   return (
-    <div className="min-h-screen flex flex-col bg-white text-slate-900 selection:bg-blue-100 selection:text-blue-900">
+    <div className="min-h-screen flex flex-col bg-gray-100 text-slate-900 pb-16 md:pb-0 selection:bg-blue-100 selection:text-blue-900">
       
-      {/* Universal Desktop & Mobile Header */}
+      {/* Universal Header */}
       <Header
         currentView={currentView}
         onNavigate={handleNavigate}
@@ -180,7 +180,7 @@ export default function App() {
       {/* Universal Footer */}
       <Footer onNavigate={handleNavigate} />
 
-      {/* Mobile Sticky Navigation Bar */}
+      {/* Mobile Bottom Navigation Bar */}
       <MobileNav
         currentView={currentView}
         onNavigate={handleNavigate}
